@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Coordinator Dashboard — Field Education Program</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ["Inter", "system-ui", "sans-serif"] }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="staff-styles.css" />
+</head>
+<body class="bg-slate-50 min-h-screen font-sans antialiased">
+
+  <!-- Top Navigation Bar -->
+  <header class="bg-gradient-to-r from-teal-700 to-emerald-700 shadow-lg sticky top-0 z-40 h-16">
+    <div class="max-w-full px-6 h-full flex items-center justify-between">
+      <button id="header-reset" class="flex items-center gap-3 hover:opacity-90 transition-opacity" title="Reset filters">
+        <div class="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+        </div>
+        <div class="text-left">
+          <p class="text-white font-semibold text-sm leading-tight">Field Education Program</p>
+          <p class="text-teal-100 text-xs">Coordinator Portal</p>
+        </div>
+      </button>
+      <div class="flex items-center gap-3">
+        <p class="text-teal-100 text-xs hidden sm:block" id="nav-date"></p>
+        <div class="w-9 h-9 rounded-full bg-white/20 border-2 border-white/30 flex items-center justify-center text-white font-bold text-sm select-none">
+          FC
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Page body: sidebar + content -->
+  <div class="flex" style="min-height: calc(100vh - 4rem);">
+
+    <!-- ── Left Sidebar ──────────────────────────────────────────────────── -->
+    <aside class="w-72 bg-white border-r border-slate-100 flex-shrink-0 sticky top-16 h-[calc(100vh-4rem)] flex flex-col overflow-y-auto">
+      <div class="p-5 flex-1">
+
+        <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-4 px-2">Navigation</p>
+
+        <nav class="space-y-2">
+          <!-- Students tab -->
+          <button class="sidebar-tab sidebar-active w-full" data-tab="students">
+            <div class="sidebar-icon-wrap bg-teal-500">
+              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+              </svg>
+            </div>
+            <div class="text-left">
+              <p class="sidebar-label">Students</p>
+              <p class="sidebar-sub">Roster &amp; placements</p>
+            </div>
+          </button>
+
+          <!-- Agencies tab -->
+          <button class="sidebar-tab w-full" data-tab="agencies">
+            <div class="sidebar-icon-wrap bg-slate-200">
+              <svg class="w-6 h-6 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+              </svg>
+            </div>
+            <div class="text-left">
+              <p class="sidebar-label">Agencies</p>
+              <p class="sidebar-sub">Contracts &amp; contacts</p>
+            </div>
+          </button>
+        </nav>
+      </div>
+
+      <!-- Sidebar footer -->
+      <div class="p-5 border-t border-slate-100">
+        <p class="text-xs text-slate-400 text-center">&copy; <span id="footer-year"></span> Field Education Program</p>
+      </div>
+    </aside>
+
+    <!-- ── Main Content ──────────────────────────────────────────────────── -->
+    <main class="flex-1 min-w-0 px-8 py-8 space-y-6 overflow-x-hidden">
+
+      <!-- Page heading (updates on tab switch) -->
+      <div>
+        <h1 class="text-2xl font-bold text-slate-800" id="page-heading">Student Roster</h1>
+        <p class="text-slate-500 text-sm mt-1" id="page-subheading">Monitor placements, liaisons, and notes across your caseload.</p>
+      </div>
+
+      <!-- ── Students Tab ──────────────────────────────────────────────── -->
+      <div id="tab-students" class="space-y-6">
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4" id="stat-cards"></div>
+
+        <!-- Filters -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 sm:p-5">
+          <div class="flex flex-wrap items-center gap-3">
+            <div class="relative flex-1 min-w-[200px]">
+              <svg class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z"/>
+              </svg>
+              <input id="search-input" type="text" placeholder="Search by student name…"
+                class="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent" />
+            </div>
+            <select id="filter-cohort" class="filter-select">
+              <option value="">All Cohorts</option>
+              <option value="Fall 2024">Fall 2024</option>
+              <option value="Fall 2025">Fall 2025</option>
+              <option value="Spring 2023">Spring 2023</option>
+              <option value="Spring 2024">Spring 2024</option>
+            </select>
+            <select id="filter-concentration" class="filter-select">
+              <option value="">All Concentrations</option>
+              <option value="Behavioral Health">Behavioral Health</option>
+              <option value="Health Care">Health Care</option>
+            </select>
+            <select id="filter-liaison" class="filter-select">
+              <option value="">All Liaisons</option>
+              <option value="Annette">Annette</option>
+              <option value="Halide">Halide</option>
+              <option value="Vanessa">Vanessa</option>
+            </select>
+            <select id="filter-status" class="filter-select">
+              <option value="">All Statuses</option>
+              <option value="Active">Active</option>
+              <option value="Completed">Completed</option>
+              <option value="Pending">Pending</option>
+            </select>
+            <select id="filter-format" class="filter-select">
+              <option value="">All Formats</option>
+              <option value="Hybrid">Hybrid</option>
+              <option value="Online">Online</option>
+            </select>
+            <button id="clear-filters" class="text-xs font-medium text-teal-600 hover:text-teal-700 px-2 py-2 whitespace-nowrap">
+              Clear filters
+            </button>
+          </div>
+        </div>
+
+        <!-- Roster table -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="border-b border-slate-100 bg-slate-50/60" id="roster-head-row"></tr>
+              </thead>
+              <tbody id="roster-body"></tbody>
+            </table>
+          </div>
+          <p id="empty-state" class="hidden text-center text-slate-400 text-sm py-10">No students match the selected filters.</p>
+        </div>
+
+        <p class="text-xs text-slate-400 text-center" id="result-count"></p>
+      </div>
+
+      <!-- ── Agencies Tab ──────────────────────────────────────────────── -->
+      <div id="tab-agencies" class="hidden space-y-6">
+
+        <!-- Agency filters -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 sm:p-5">
+          <div class="flex flex-wrap items-center gap-3">
+            <div class="relative flex-1 min-w-[200px]">
+              <svg class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z"/>
+              </svg>
+              <input id="agency-search" type="text" placeholder="Search by agency name…"
+                class="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent" />
+            </div>
+            <select id="filter-contract" class="filter-select">
+              <option value="">All Contract Statuses</option>
+              <option value="Active">Active</option>
+              <option value="Expired">Expired</option>
+              <option value="Pending">Pending</option>
+            </select>
+            <button id="clear-agency-filters" class="text-xs font-medium text-teal-600 hover:text-teal-700 px-2 py-2 whitespace-nowrap">
+              Clear filters
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5" id="agency-cards"></div>
+        <p id="agency-empty" class="hidden text-center text-slate-400 text-sm py-10">No agencies match the selected filters.</p>
+        <p class="text-xs text-slate-400 text-center" id="agency-count"></p>
+
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Notes Modal -->
+  <div id="notes-modal" class="fixed inset-0 z-50 hidden">
+    <div id="notes-backdrop" class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"></div>
+    <div class="absolute inset-0 flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[85vh] overflow-y-auto" role="dialog" aria-modal="true">
+        <div class="px-6 pt-6 pb-4 border-b border-slate-100 flex items-start justify-between gap-4">
+          <div>
+            <p class="text-xs font-semibold text-teal-500 uppercase tracking-wider mb-1">Coordinator Notes</p>
+            <h3 class="text-lg font-bold text-slate-800" id="modal-student-name">—</h3>
+            <p class="text-xs text-slate-400 mt-0.5" id="modal-student-meta">—</p>
+          </div>
+          <button id="modal-close" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 flex-shrink-0" aria-label="Close">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        <div class="px-6 py-5 space-y-4">
+          <div class="grid grid-cols-2 gap-3 text-xs" id="modal-detail-grid"></div>
+          <div>
+            <label for="modal-notes-textarea" class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 block">Notes</label>
+            <textarea id="modal-notes-textarea" rows="6"
+              class="w-full text-sm border border-slate-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent resize-none"
+              placeholder="Add coordinator notes about this student…"></textarea>
+          </div>
+        </div>
+        <div class="px-6 pb-6 flex items-center justify-between gap-3">
+          <p class="text-xs text-slate-400" id="modal-save-status"></p>
+          <div class="flex gap-2">
+            <button id="modal-cancel" class="px-4 py-2 text-sm font-medium text-slate-500 hover:bg-slate-50 rounded-lg">Cancel</button>
+            <button id="modal-save" class="px-4 py-2 text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 rounded-lg shadow-sm">Save Notes</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="staff-app.js"></script>
+</body>
+</html>

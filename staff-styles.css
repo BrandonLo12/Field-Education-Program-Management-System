@@ -1,0 +1,137 @@
+/* Table cell utility classes */
+.th-cell {
+  padding: 0.75rem 1.25rem;
+  text-align: left;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.th-cell.sortable {
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.15s ease;
+}
+.th-cell.sortable:hover {
+  color: #0f766e;
+}
+.th-cell.sortable .sort-arrow {
+  display: inline-block;
+  width: 0.6rem;
+  height: 0.6rem;
+  margin-left: 0.2rem;
+  vertical-align: -1px;
+  opacity: 0;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.th-cell.sortable.sort-active .sort-arrow {
+  opacity: 1;
+}
+.th-cell.sortable.sort-desc .sort-arrow {
+  transform: rotate(180deg);
+}
+
+.td-cell {
+  padding: 0.875rem 1.25rem;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+/* Sidebar nav tabs */
+.sidebar-tab {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.125rem;
+  border-radius: 1rem;
+  cursor: pointer;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+  border: 2px solid transparent;
+}
+.sidebar-tab:hover {
+  background: #f0fdfa;
+}
+.sidebar-tab.sidebar-active {
+  background: #f0fdfa;
+  border-color: #99f6e4;
+  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.08);
+}
+.sidebar-icon-wrap {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.875rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s ease;
+}
+.sidebar-label {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1e293b;
+  line-height: 1.3;
+}
+.sidebar-tab.sidebar-active .sidebar-label {
+  color: #0f766e;
+}
+.sidebar-sub {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-top: 0.125rem;
+}
+
+/* Filter dropdowns */
+.filter-select {
+  font-size: 0.8125rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  color: #475569;
+  background: white;
+  cursor: pointer;
+}
+.filter-select:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px #2dd4bf;
+  border-color: transparent;
+}
+
+/* Entrance animation */
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+main > * {
+  animation: fadeSlideUp 0.4s ease both;
+}
+main > *:nth-child(1) { animation-delay: 0.03s; }
+main > *:nth-child(2) { animation-delay: 0.08s; }
+main > *:nth-child(3) { animation-delay: 0.14s; }
+main > *:nth-child(4) { animation-delay: 0.2s; }
+
+/* Modal animation */
+#notes-modal:not(.hidden) > div:last-child > div {
+  animation: modalPop 0.2s ease both;
+}
+@keyframes modalPop {
+  from { opacity: 0; transform: scale(0.96) translateY(6px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* Card hover lift */
+.bg-white {
+  transition: box-shadow 0.2s ease;
+}
+.bg-white:hover {
+  box-shadow: 0 4px 20px -4px rgba(20, 184, 166, 0.1), 0 2px 8px -2px rgba(0, 0, 0, 0.06);
+}
