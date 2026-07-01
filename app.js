@@ -382,10 +382,68 @@ function renderHours() {
   `;
 }
 
+// ── Placement Status Card ─────────────────────────────────────────────────────
+function renderPlacementStatus() {
+  const pl = student.placement;
+  const cfg = {
+    active:    { label: "Active",    cls: "bg-emerald-50 text-emerald-700 border border-emerald-200", dot: "bg-emerald-400 animate-pulse" },
+    pending:   { label: "Pending",   cls: "bg-amber-50 text-amber-700 border border-amber-200",       dot: "bg-amber-400" },
+    completed: { label: "Completed", cls: "bg-slate-100 text-slate-600 border border-slate-200",      dot: "bg-slate-400" },
+  };
+  const s = cfg[pl.status] || cfg.pending;
+  document.getElementById("placement-status-info").innerHTML = [
+    infoRow("Status", `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${s.cls}"><span class="w-1.5 h-1.5 rounded-full ${s.dot}"></span>${s.label}</span>`),
+    infoRow("Field Supervisor", pl.supervisor),
+    infoRow("Supervisor Email", `<a href="mailto:${pl.supervisorEmail}" class="text-indigo-600 hover:underline">${pl.supervisorEmail}</a>`),
+    infoRow("Supervisor Phone", pl.supervisorPhone),
+    infoRow("Start Date", fmtDate(pl.fieldStart)),
+    infoRow("End Date",   fmtDate(pl.fieldEnd)),
+  ].join("");
+}
+
+// ── Tab Switching ─────────────────────────────────────────────────────────────
+const STD_TAB_META = {
+  home:     { heading: "Home",                 subheading: "Your placement overview and status." },
+  profile:  { heading: "Profile",              subheading: "Your personal information." },
+  academic: { heading: "Academic Information", subheading: "Cohort details, fieldwork calendar, and hours." },
+};
+
+function switchStudentTab(tab) {
+  ["home", "profile", "academic"].forEach(t => {
+    document.getElementById(`tab-${t}`).classList.toggle("hidden", t !== tab);
+  });
+
+  document.querySelectorAll(".std-tab").forEach(btn => {
+    const isActive = btn.dataset.tab === tab;
+    btn.classList.toggle("std-active", isActive);
+    const iconWrap = btn.querySelector(".std-icon-wrap");
+    const icon     = btn.querySelector("svg");
+    if (isActive) {
+      iconWrap.classList.remove("std-icon-inactive");
+      iconWrap.classList.add("std-icon-active");
+      icon.classList.remove("text-slate-500");
+      icon.classList.add("text-white");
+    } else {
+      iconWrap.classList.remove("std-icon-active");
+      iconWrap.classList.add("std-icon-inactive");
+      icon.classList.remove("text-white");
+      icon.classList.add("text-slate-500");
+    }
+  });
+
+  document.getElementById("page-heading").textContent    = STD_TAB_META[tab].heading;
+  document.getElementById("page-subheading").textContent = STD_TAB_META[tab].subheading;
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 renderHeader();
 renderPersonal();
 renderCohort();
 renderAgency();
+renderPlacementStatus();
 renderCalendar();
 renderHours();
+
+document.querySelectorAll(".std-tab").forEach(btn => {
+  btn.addEventListener("click", () => switchStudentTab(btn.dataset.tab));
+});

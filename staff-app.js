@@ -72,7 +72,8 @@ const roster = [
     id: 1, name: "Jane Smith", phone: "(415) 555-0123", cohort: "Fall 2024",
     format: "Hybrid", enrollment: "Full-Time",
     city: "San Francisco", county: "San Francisco County",
-    concentration: "Behavioral Health",
+    concentration: "Behavioral Health", setting: "Community Mental Health Center",
+    fieldStart: "Feb 3, 2026", fieldEnd: "Aug 28, 2026",
     liaison: "Annette", status: "Active",
     notes: "Strong rapport with site supervisor. On track for 500-hour requirement by August.",
   },
@@ -80,7 +81,8 @@ const roster = [
     id: 2, name: "Marcus Lee", phone: "(209) 555-0456", cohort: "Spring 2024",
     format: "Online", enrollment: "Part-Time",
     city: "Stockton", county: "San Joaquin County",
-    concentration: "Health Care",
+    concentration: "Health Care", setting: "Outpatient Clinic",
+    fieldStart: "Jan 20, 2026", fieldEnd: "Jul 31, 2026",
     liaison: "Vanessa", status: "Active",
     notes: "",
   },
@@ -88,7 +90,8 @@ const roster = [
     id: 3, name: "Priya Patel", phone: "(916) 555-0789", cohort: "Fall 2025",
     format: "Hybrid", enrollment: "Full-Time",
     city: "Sacramento", county: "Sacramento County",
-    concentration: "Behavioral Health",
+    concentration: "Behavioral Health", setting: "School",
+    fieldStart: "Sep 8, 2026", fieldEnd: "Apr 30, 2027",
     liaison: "Halide", status: "Pending",
     notes: "Awaiting signed affiliation agreement from agency before start date can be confirmed.",
   },
@@ -96,7 +99,8 @@ const roster = [
     id: 4, name: "Diego Ramirez", phone: "(209) 555-0234", cohort: "Spring 2024",
     format: "Online", enrollment: "Full-Time",
     city: "Modesto", county: "Stanislaus County",
-    concentration: "Health Care",
+    concentration: "Health Care", setting: "Hospital",
+    fieldStart: "Jan 20, 2026", fieldEnd: "Aug 14, 2026",
     liaison: "Annette", status: "Active",
     notes: "",
   },
@@ -104,7 +108,8 @@ const roster = [
     id: 5, name: "Olivia Chen", phone: "(510) 555-0345", cohort: "Spring 2023",
     format: "Hybrid", enrollment: "Part-Time",
     city: "Oakland", county: "Alameda County",
-    concentration: "Behavioral Health",
+    concentration: "Behavioral Health", setting: "Non-profit Organization",
+    fieldStart: "Jan 16, 2025", fieldEnd: "May 30, 2025",
     liaison: "Vanessa", status: "Completed",
     notes: "Completed all required hours on 5/30. Final evaluation submitted by site supervisor.",
   },
@@ -112,7 +117,8 @@ const roster = [
     id: 6, name: "Tyler Brooks", phone: "(559) 555-0567", cohort: "Fall 2024",
     format: "Online", enrollment: "Full-Time",
     city: "Fresno", county: "Fresno County",
-    concentration: "Health Care",
+    concentration: "Health Care", setting: "Residential Facility",
+    fieldStart: "Feb 3, 2026", fieldEnd: "Aug 28, 2026",
     liaison: "Halide", status: "Active",
     notes: "Flagged low hours logged for two consecutive weeks — following up with agency supervisor.",
   },
@@ -120,7 +126,8 @@ const roster = [
     id: 7, name: "Amara Johnson", phone: "(408) 555-0678", cohort: "Fall 2025",
     format: "Hybrid", enrollment: "Full-Time",
     city: "San Jose", county: "Santa Clara County",
-    concentration: "Behavioral Health",
+    concentration: "Behavioral Health", setting: "Government Agency",
+    fieldStart: "Sep 8, 2026", fieldEnd: "Apr 30, 2027",
     liaison: "Annette", status: "Pending",
     notes: "",
   },
@@ -128,7 +135,8 @@ const roster = [
     id: 8, name: "Kevin Nguyen", phone: "(209) 555-0890", cohort: "Spring 2024",
     format: "Online", enrollment: "Part-Time",
     city: "Stockton", county: "San Joaquin County",
-    concentration: "Health Care",
+    concentration: "Health Care", setting: "Outpatient Clinic",
+    fieldStart: "Jan 20, 2026", fieldEnd: "Jul 31, 2026",
     liaison: "Vanessa", status: "Active",
     notes: "",
   },
@@ -136,7 +144,8 @@ const roster = [
     id: 9, name: "Sofia Garcia", phone: "(916) 555-0912", cohort: "Fall 2024",
     format: "Hybrid", enrollment: "Full-Time",
     city: "Sacramento", county: "Sacramento County",
-    concentration: "Behavioral Health",
+    concentration: "Behavioral Health", setting: "Community Mental Health Center",
+    fieldStart: "Feb 3, 2026", fieldEnd: "Aug 28, 2026",
     liaison: "Halide", status: "Active",
     notes: "Mid-placement evaluation scheduled for next site visit.",
   },
@@ -144,7 +153,8 @@ const roster = [
     id: 10, name: "Ben Carter", phone: "(209) 555-0111", cohort: "Fall 2025",
     format: "Online", enrollment: "Full-Time",
     city: "Stockton", county: "San Joaquin County",
-    concentration: "Health Care",
+    concentration: "Health Care", setting: "Hospital",
+    fieldStart: "Sep 8, 2026", fieldEnd: "Apr 30, 2027",
     liaison: "Annette", status: "Pending",
     notes: "",
   },
@@ -245,7 +255,7 @@ const COLUMNS = [
   { key: "notes",         label: "Notes" },
 ];
 
-let sortKey = "name";
+let sortKey = "cohort";
 let sortDir = "asc"; // "asc" | "desc"
 
 function renderTableHeader() {
@@ -258,10 +268,13 @@ function renderTableHeader() {
   document.querySelectorAll(".th-cell.sortable").forEach(th => {
     th.addEventListener("click", () => {
       const key = th.dataset.sort;
-      if (sortKey === key) {
-        sortDir = sortDir === "asc" ? "desc" : "asc";
+      if (sortKey === key && sortDir === "desc") {
+        sortKey = null; // 3rd click — reset to original order
+        sortDir = "asc";
+      } else if (sortKey === key) {
+        sortDir = "desc"; // 2nd click — descending
       } else {
-        sortKey = key;
+        sortKey = key;   // 1st click — ascending
         sortDir = "asc";
       }
       renderRoster();
@@ -277,14 +290,25 @@ function updateSortIndicators() {
   });
 }
 
+const SEASON_ORDER = { Spring: 0, Summer: 1, Fall: 2 };
+
+function cohortToNum(cohort) {
+  const [season, year] = String(cohort).split(" ");
+  return (SEASON_ORDER[season] ?? 99) * 10000 + parseInt(year);
+}
+
 function applySort(list) {
   if (!sortKey) return list;
   return [...list].sort((a, b) => {
-    const av = String(a[sortKey] ?? "").toLowerCase();
-    const bv = String(b[sortKey] ?? "").toLowerCase();
-    if (av < bv) return sortDir === "asc" ? -1 : 1;
-    if (av > bv) return sortDir === "asc" ? 1 : -1;
-    return 0;
+    let diff;
+    if (sortKey === "cohort") {
+      diff = cohortToNum(a.cohort) - cohortToNum(b.cohort);
+    } else {
+      const av = String(a[sortKey] ?? "").toLowerCase();
+      const bv = String(b[sortKey] ?? "").toLowerCase();
+      diff = av < bv ? -1 : av > bv ? 1 : 0;
+    }
+    return sortDir === "asc" ? diff : -diff;
   });
 }
 
@@ -333,13 +357,13 @@ function renderRoster() {
     tbody.innerHTML = filtered.map(s => `
       <tr class="border-b border-slate-50 last:border-0 hover:bg-slate-50/60 transition-colors">
         <td class="td-cell">
-          <div class="flex items-center gap-3">
-            <div class="w-8 h-8 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center text-xs font-bold flex-shrink-0">${initials(s.name)}</div>
-            <div>
-              <p class="font-medium text-slate-700">${s.name}</p>
+          <button class="student-name-btn flex items-center gap-3 group" data-id="${s.id}">
+            <div class="w-8 h-8 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center text-xs font-bold flex-shrink-0 group-hover:bg-teal-500 group-hover:text-white transition-colors">${initials(s.name)}</div>
+            <div class="text-left">
+              <p class="font-medium text-teal-700 group-hover:text-teal-900 group-hover:underline">${s.name}</p>
               <p class="text-xs text-slate-400">${s.phone}</p>
             </div>
-          </div>
+          </button>
         </td>
         <td class="td-cell">${statusBadge(s.status)}</td>
         <td class="td-cell">${badge(s.cohort, COHORT_STYLES)}</td>
@@ -366,13 +390,110 @@ function renderRoster() {
 
   resultCount.textContent = `Showing ${filtered.length} of ${roster.length} students`;
 
+  document.querySelectorAll(".student-name-btn").forEach(btn => {
+    btn.addEventListener("click", () => openStudentPanel(Number(btn.dataset.id)));
+  });
+
   document.querySelectorAll(".notes-btn").forEach(btn => {
-    btn.addEventListener("click", () => openNotesModal(Number(btn.dataset.id)));
+    btn.addEventListener("click", () => openStudentPanel(Number(btn.dataset.id)));
   });
 }
 
-// ── Notes Modal ──────────────────────────────────────────────────────────────
+// ── Student Profile Panel ────────────────────────────────────────────────────
 let activeStudentId = null;
+
+function panelInfoRow(label, value) {
+  return `<div>
+    <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-0.5">${label}</p>
+    <p class="text-sm text-slate-700 leading-snug">${value}</p>
+  </div>`;
+}
+
+function openStudentPanel(id) {
+  const s = roster.find(s => s.id === id);
+  if (!s) return;
+  activeStudentId = id;
+
+  const cs = STATUS_STYLES[s.status] || STATUS_STYLES.Pending;
+
+  document.getElementById("panel-body").innerHTML = `
+    <!-- Avatar + name -->
+    <div class="flex items-center gap-4">
+      <div class="w-16 h-16 rounded-2xl bg-teal-100 text-teal-700 flex items-center justify-center text-xl font-bold flex-shrink-0">${initials(s.name)}</div>
+      <div>
+        <h2 class="text-xl font-bold text-slate-800 leading-tight">${s.name}</h2>
+        <div class="mt-2">
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${cs.pill}">
+            <span class="w-1.5 h-1.5 rounded-full ${cs.dot}"></span>${s.status}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Personal Info -->
+    <div class="bg-slate-50 rounded-2xl p-4 space-y-3">
+      <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Personal Information</p>
+      <div class="grid grid-cols-2 gap-3">
+        ${panelInfoRow("Phone", s.phone)}
+        ${panelInfoRow("Pacific Email", `<a href="mailto:${s.email}" class="text-indigo-500 hover:underline">${s.email}</a>`)}
+        ${panelInfoRow("City", s.city)}
+        ${panelInfoRow("County", s.county)}
+      </div>
+    </div>
+
+    <!-- Academic Info -->
+    <div class="bg-slate-50 rounded-2xl p-4 space-y-3">
+      <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Academic Information</p>
+      <div class="grid grid-cols-2 gap-3">
+        ${panelInfoRow("Cohort", s.cohort)}
+        ${panelInfoRow("Concentration", s.concentration)}
+        ${panelInfoRow("Program Format", s.format)}
+        ${panelInfoRow("Enrollment", s.enrollment)}
+      </div>
+    </div>
+
+    <!-- Placement Info -->
+    <div class="bg-slate-50 rounded-2xl p-4 space-y-3">
+      <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Placement Information</p>
+      <div class="grid grid-cols-2 gap-3">
+        ${panelInfoRow("Placement Status", s.status)}
+        ${panelInfoRow("Field Liaison", s.liaison)}
+        ${panelInfoRow("Location", `${s.city}, ${s.county}`)}
+        ${panelInfoRow("Setting", s.setting || "—")}
+        ${panelInfoRow("Start Date", s.fieldStart || "—")}
+        ${panelInfoRow("End Date", s.fieldEnd || "—")}
+      </div>
+    </div>
+  `;
+
+  document.getElementById("panel-notes-textarea").value = s.notes || "";
+  document.getElementById("panel-save-status").textContent = "";
+
+  // Show panel
+  document.getElementById("panel-backdrop").classList.remove("hidden");
+  document.getElementById("student-panel").classList.remove("hidden");
+}
+
+function closeStudentPanel() {
+  document.getElementById("panel-backdrop").classList.add("hidden");
+  document.getElementById("student-panel").classList.add("hidden");
+  activeStudentId = null;
+}
+
+function savePanelNotes() {
+  if (activeStudentId === null) return;
+  const s = roster.find(s => s.id === activeStudentId);
+  s.notes = document.getElementById("panel-notes-textarea").value.trim();
+  persistNotes();
+  document.getElementById("panel-save-status").textContent = "Saved ✓";
+  renderRoster();
+  setTimeout(() => {
+    if (document.getElementById("panel-save-status"))
+      document.getElementById("panel-save-status").textContent = "";
+  }, 2000);
+}
+
+// ── Notes Modal ──────────────────────────────────────────────────────────────
 
 function openNotesModal(id) {
   const student = roster.find(s => s.id === id);
@@ -497,6 +618,381 @@ function renderAgencies() {
   count.textContent = `Showing ${filtered.length} of ${agencies.length} agencies`;
 }
 
+// ── Staff Profile ─────────────────────────────────────────────────────────────
+const staffProfile = {
+  name: "Dr. Frances Cooper",
+  initials: "FC",
+  title: "Field Education Coordinator",
+  department: "School of Social Work",
+  university: "University of the Pacific",
+  email: "f.cooper@pacific.edu",
+  phone: "(209) 555-0100",
+  office: "Bannister Hall, Room 205",
+  liaisons: ["Annette", "Vanessa", "Halide"],
+};
+
+function renderProfile() {
+  const active    = roster.filter(s => s.status === "Active").length;
+  const pending   = roster.filter(s => s.status === "Pending").length;
+  const completed = roster.filter(s => s.status === "Completed").length;
+
+  const profileInfoRow = (label, value) => `
+    <div class="py-3 border-b border-slate-50 last:border-0">
+      <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-0.5">${label}</p>
+      <p class="text-sm text-slate-700">${value}</p>
+    </div>`;
+
+  document.getElementById("profile-content").innerHTML = `
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+      <!-- Left: Avatar + name card -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 flex flex-col items-center text-center gap-4">
+        <div class="w-24 h-24 rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center text-white text-3xl font-bold shadow-lg">
+          ${staffProfile.initials}
+        </div>
+        <div>
+          <h2 class="text-xl font-bold text-slate-800">${staffProfile.name}</h2>
+          <p class="text-sm text-teal-600 font-medium mt-1">${staffProfile.title}</p>
+          <p class="text-xs text-slate-400 mt-0.5">${staffProfile.department}</p>
+        </div>
+      </div>
+
+      <!-- Right: Details -->
+      <div class="lg:col-span-2 space-y-6">
+
+        <!-- Contact & institutional info -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+          <div class="px-6 pt-5 pb-3 border-b border-slate-50 flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-lg bg-teal-50 flex items-center justify-center flex-shrink-0">
+              <svg class="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+              </svg>
+            </div>
+            <h3 class="font-semibold text-slate-700 text-sm">Contact Information</h3>
+          </div>
+          <div class="px-6 divide-y divide-slate-50">
+            ${profileInfoRow("Full Name", staffProfile.name)}
+            ${profileInfoRow("Email", `<a href="mailto:${staffProfile.email}" class="text-indigo-500 hover:underline">${staffProfile.email}</a>`)}
+            ${profileInfoRow("Phone", staffProfile.phone)}
+            ${profileInfoRow("Office", staffProfile.office)}
+            ${profileInfoRow("University", staffProfile.university)}
+            ${profileInfoRow("Department", staffProfile.department)}
+          </div>
+        </div>
+
+        <!-- Caseload summary -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+          <div class="px-6 pt-5 pb-3 border-b border-slate-50 flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center flex-shrink-0">
+              <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+              </svg>
+            </div>
+            <h3 class="font-semibold text-slate-700 text-sm">Current Caseload</h3>
+          </div>
+          <div class="px-6 py-4 grid grid-cols-2 sm:grid-cols-4 gap-4">
+            ${[
+              { label: "Total Students", value: roster.length, cls: "bg-slate-50 text-slate-700" },
+              { label: "Active",         value: active,        cls: "bg-emerald-50 text-emerald-700" },
+              { label: "Pending",        value: pending,       cls: "bg-amber-50 text-amber-700" },
+              { label: "Completed",      value: completed,     cls: "bg-indigo-50 text-indigo-700" },
+            ].map(s => `
+              <div class="${s.cls} rounded-xl p-4 text-center">
+                <p class="text-2xl font-bold ${s.cls.includes("slate") ? "text-slate-800" : ""}">${s.value}</p>
+                <p class="text-xs font-medium mt-1 opacity-80">${s.label}</p>
+              </div>`).join("")}
+          </div>
+        </div>
+
+      </div>
+    </div>
+  `;
+}
+
+// ── Email Templates ───────────────────────────────────────────────────────────
+const TEMPLATES = [
+  {
+    id: 1, category: "Accepted",
+    title: "Placement Accepted",
+    subject: "Congratulations — Your Field Placement Has Been Confirmed",
+    body: `Dear [Student Name],
+
+We are pleased to inform you that your field placement at [Agency Name] has been officially confirmed for [Start Date] through [End Date].
+
+Please report to [Agency Address] on your first day. Your field supervisor will be [Supervisor Name], who will walk you through orientation and your learning plan for the semester.
+
+A few important reminders:
+• Log your hours weekly in the student portal.
+• Your field liaison, [Liaison Name], will schedule a check-in within the first two weeks.
+• Please review the Field Education Handbook before your start date.
+
+We are excited for you to begin this experience. Do not hesitate to reach out with any questions.
+
+Warm regards,
+[Coordinator Name]
+Field Education Program
+University of the Pacific`,
+  },
+  {
+    id: 2, category: "On Hold",
+    title: "Placement On Hold",
+    subject: "Update on Your Field Placement Application — Action Required",
+    body: `Dear [Student Name],
+
+Thank you for your continued interest in the Field Education Program. We are writing to let you know that your placement at [Agency Name] has been placed on hold pending the following:
+
+• [Reason — e.g., missing documentation / affiliation agreement not yet signed / background check in progress]
+
+To move forward, please take the following steps as soon as possible:
+1. [Action item 1]
+2. [Action item 2]
+
+Once these items are resolved, we will be able to confirm your start date. Please reach out to your liaison, [Liaison Name], if you have any questions or need assistance.
+
+We appreciate your patience and look forward to getting you placed.
+
+Sincerely,
+[Coordinator Name]
+Field Education Program
+University of the Pacific`,
+  },
+  {
+    id: 3, category: "Denied",
+    title: "Placement Not Approved",
+    subject: "Field Placement Application — Decision Notice",
+    body: `Dear [Student Name],
+
+Thank you for your application to the Field Education Program and for your interest in [Agency Name].
+
+After careful review, we regret to inform you that we are unable to approve your placement at this time. This decision was based on [brief, professional reason — e.g., capacity limitations at the agency / a mismatch with the current learning objectives / eligibility requirements not yet met].
+
+This does not reflect on your potential as a social work professional. We encourage you to:
+• Schedule a meeting with your academic advisor to discuss next steps.
+• Review alternative placement opportunities for the upcoming term.
+• Contact our office to explore other agencies that may be a strong fit.
+
+We remain committed to supporting your academic and professional development. Please do not hesitate to reach out.
+
+Sincerely,
+[Coordinator Name]
+Field Education Program
+University of the Pacific`,
+  },
+  {
+    id: 4, category: "General",
+    title: "Welcome to Field Education",
+    subject: "Welcome to the Field Education Program — Important Next Steps",
+    body: `Dear [Student Name],
+
+Welcome to the Field Education Program at the University of the Pacific! We are thrilled to have you join us for this important milestone in your social work education.
+
+Here is what to expect over the coming weeks:
+
+1. Placement Matching — Our team will work with you to identify an agency that aligns with your concentration ([Concentration]) and learning goals.
+2. Orientation — You will receive an invitation to the Field Education Orientation shortly. Attendance is required.
+3. Liaison Introduction — You have been assigned [Liaison Name] as your field liaison. They will be your primary point of contact throughout your placement.
+
+Please log into the student portal to complete your placement preference form by [Deadline Date].
+
+We look forward to supporting you through this journey. Welcome aboard!
+
+Best,
+[Coordinator Name]
+Field Education Program
+University of the Pacific`,
+  },
+  {
+    id: 5, category: "General",
+    title: "Hours Log Reminder",
+    subject: "Reminder: Please Update Your Field Hours Log",
+    body: `Dear [Student Name],
+
+This is a friendly reminder that your field hours log is due to be updated. Our records show your last entry was on [Last Log Date].
+
+Keeping accurate, up-to-date hours is a program requirement and ensures you remain on track toward your [Required Hours]-hour goal.
+
+To log your hours:
+1. Log in to the student portal.
+2. Navigate to "Field Hours" and enter your hours for each session.
+3. Submit for supervisor approval.
+
+If you are experiencing any difficulties logging your hours or have questions about your progress, please reach out to your liaison, [Liaison Name].
+
+Thank you for staying on top of this important requirement.
+
+Best regards,
+[Coordinator Name]
+Field Education Program
+University of the Pacific`,
+  },
+  {
+    id: 6, category: "General",
+    title: "Mid-Placement Check-In",
+    subject: "Mid-Placement Check-In — How Is Your Placement Going?",
+    body: `Dear [Student Name],
+
+As you reach the midpoint of your field placement at [Agency Name], we want to take a moment to check in on your progress and experience.
+
+Please take a few minutes to reflect on the following:
+• Are you on track with your hours? (Current goal: [Hours Completed] of [Required Hours] hours)
+• Is your learning agreement being addressed?
+• Are there any challenges with your supervisor or agency you would like to discuss?
+
+Your field liaison, [Liaison Name], will be reaching out shortly to schedule a mid-placement meeting. If you have any immediate concerns, please do not wait — contact us at any time.
+
+We hope your placement is proving to be a meaningful and growth-filled experience.
+
+Warm regards,
+[Coordinator Name]
+Field Education Program
+University of the Pacific`,
+  },
+  {
+    id: 7, category: "General",
+    title: "Site Visit Notification",
+    subject: "Upcoming Site Visit — [Agency Name]",
+    body: `Dear [Student Name] and [Supervisor Name],
+
+I hope this message finds you both well. I am writing to schedule a site visit as part of our standard field education oversight process.
+
+Proposed visit details:
+• Date: [Proposed Date]
+• Time: [Proposed Time]
+• Location: [Agency Address]
+
+During the visit, I will meet briefly with both of you — together and individually — to discuss the student's progress, learning goals, and overall placement experience.
+
+Please let me know if the proposed date works, or suggest an alternative that fits your schedule. I look forward to connecting with you both.
+
+Best regards,
+[Liaison Name]
+Field Education Program
+University of the Pacific`,
+  },
+  {
+    id: 8, category: "General",
+    title: "Missing Documentation",
+    subject: "Action Required — Outstanding Field Placement Documentation",
+    body: `Dear [Student Name],
+
+We hope your placement is going well. Our records indicate that the following required documentation has not yet been submitted:
+
+• [ ] Signed Learning Agreement
+• [ ] Background Check Clearance
+• [ ] Liability Insurance Confirmation
+• [ ] Other: [Specify]
+
+These documents are required for you to remain in good standing with the Field Education Program. Please submit the outstanding items through the student portal or email them directly to our office no later than [Deadline Date].
+
+If you have already submitted these items and believe this message was sent in error, please contact us so we can update your records.
+
+Thank you for your prompt attention to this matter.
+
+Sincerely,
+[Coordinator Name]
+Field Education Program
+University of the Pacific`,
+  },
+];
+
+const TEMPLATE_CATEGORY_STYLES = {
+  "Accepted": "bg-emerald-50 text-emerald-700 border border-emerald-200",
+  "On Hold":  "bg-amber-50 text-amber-700 border border-amber-200",
+  "Denied":   "bg-red-50 text-red-600 border border-red-200",
+  "General":  "bg-indigo-50 text-indigo-700 border border-indigo-200",
+};
+
+function renderTemplates() {
+  const search   = document.getElementById("template-search").value.trim().toLowerCase();
+  const category = document.getElementById("filter-template-category").value;
+
+  const filtered = TEMPLATES.filter(t => {
+    if (search && !t.title.toLowerCase().includes(search) && !t.subject.toLowerCase().includes(search)) return false;
+    if (category && t.category !== category) return false;
+    return true;
+  });
+
+  const grid  = document.getElementById("template-cards");
+  const empty = document.getElementById("template-empty");
+
+  if (filtered.length === 0) {
+    grid.innerHTML = "";
+    empty.classList.remove("hidden");
+    return;
+  }
+
+  empty.classList.add("hidden");
+  grid.innerHTML = filtered.map(t => {
+    const catCls = TEMPLATE_CATEGORY_STYLES[t.category] || TEMPLATE_CATEGORY_STYLES["General"];
+    const preview = t.body.split("\n").slice(2, 5).join(" ").replace(/\s+/g, " ").slice(0, 120) + "…";
+    return `
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col overflow-hidden">
+        <!-- Card header -->
+        <div class="px-5 pt-5 pb-4 border-b border-slate-50">
+          <div class="flex items-start justify-between gap-3 mb-2">
+            <h3 class="font-bold text-slate-800 text-base leading-snug">${t.title}</h3>
+            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold flex-shrink-0 ${catCls}">${t.category}</span>
+          </div>
+          <p class="text-xs text-slate-500"><span class="font-medium text-slate-400 uppercase tracking-wide text-[10px]">Subject: </span>${t.subject}</p>
+        </div>
+
+        <!-- Body preview -->
+        <div class="px-5 py-4 flex-1">
+          <p class="text-xs text-slate-400 uppercase tracking-wide font-semibold mb-2">Preview</p>
+          <p class="text-sm text-slate-500 leading-relaxed">${preview}</p>
+        </div>
+
+        <!-- Actions -->
+        <div class="px-5 pb-5 flex items-center gap-2">
+          <button onclick="expandTemplate(${t.id})"
+            class="flex-1 py-2 text-sm font-medium text-teal-700 bg-teal-50 hover:bg-teal-100 rounded-xl border border-teal-200 transition-colors">
+            View Full Template
+          </button>
+          <button onclick="copyTemplate(${t.id}, this)"
+            class="py-2 px-4 text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 rounded-xl transition-colors">
+            Copy
+          </button>
+        </div>
+      </div>`;
+  }).join("");
+}
+
+function copyTemplate(id, btn) {
+  const t = TEMPLATES.find(t => t.id === id);
+  if (!t) return;
+  const text = `Subject: ${t.subject}\n\n${t.body}`;
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = "Copied ✓";
+    btn.classList.add("bg-emerald-600");
+    btn.classList.remove("bg-teal-600");
+    setTimeout(() => {
+      btn.textContent = orig;
+      btn.classList.remove("bg-emerald-600");
+      btn.classList.add("bg-teal-600");
+    }, 2000);
+  });
+}
+
+function expandTemplate(id) {
+  const t = TEMPLATES.find(t => t.id === id);
+  if (!t) return;
+  const catCls = TEMPLATE_CATEGORY_STYLES[t.category] || TEMPLATE_CATEGORY_STYLES["General"];
+  document.getElementById("modal-student-name").textContent = t.title;
+  document.getElementById("modal-student-meta").innerHTML = `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${catCls}">${t.category}</span>`;
+  document.getElementById("modal-detail-grid").innerHTML = `
+    <div class="col-span-2">
+      <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1">Subject</p>
+      <p class="text-sm font-medium text-slate-700">${t.subject}</p>
+    </div>`;
+  document.getElementById("modal-notes-textarea").value = t.body;
+  document.querySelector("label[for='modal-notes-textarea']").textContent = "Email Body";
+  document.getElementById("modal-save").textContent = "Copy to Clipboard";
+  document.getElementById("modal-save").onclick = () => copyTemplate(t.id, document.getElementById("modal-save"));
+  document.getElementById("notes-modal").classList.remove("hidden");
+  document.body.style.overflow = "hidden";
+}
+
 // ── Tab Switching ─────────────────────────────────────────────────────────────
 const TAB_META = {
   students: {
@@ -507,6 +1003,14 @@ const TAB_META = {
     heading: "Agency Directory",
     subheading: "View contracted agencies, contact information, and contract status.",
   },
+  communications: {
+    heading: "Email Templates",
+    subheading: "Ready-to-use email templates for student placement correspondence.",
+  },
+  profile: {
+    heading: "Profile",
+    subheading: "Your account details and current caseload overview.",
+  },
 };
 
 let activeTab = "students";
@@ -515,6 +1019,8 @@ function switchTab(tab) {
   activeTab = tab;
   document.getElementById("tab-students").classList.toggle("hidden", tab !== "students");
   document.getElementById("tab-agencies").classList.toggle("hidden", tab !== "agencies");
+  document.getElementById("tab-communications").classList.toggle("hidden", tab !== "communications");
+  document.getElementById("tab-profile").classList.toggle("hidden", tab !== "profile");
   document.querySelectorAll(".sidebar-tab").forEach(btn => {
     const isActive = btn.dataset.tab === tab;
     btn.classList.toggle("sidebar-active", isActive);
@@ -566,9 +1072,19 @@ function wireEvents() {
   document.getElementById("filter-contract").addEventListener("input", renderAgencies);
   document.getElementById("clear-agency-filters").addEventListener("click", resetAgencyFilters);
 
+  document.getElementById("template-search").addEventListener("input", renderTemplates);
+  document.getElementById("filter-template-category").addEventListener("input", renderTemplates);
+  document.getElementById("clear-template-filters").addEventListener("click", () => {
+    document.getElementById("template-search").value = "";
+    document.getElementById("filter-template-category").value = "";
+    renderTemplates();
+  });
+
   document.querySelectorAll(".sidebar-tab").forEach(btn => {
     btn.addEventListener("click", () => switchTab(btn.dataset.tab));
   });
+
+  document.getElementById("panel-save-notes").addEventListener("click", savePanelNotes);
 
   document.getElementById("modal-close").addEventListener("click", closeNotesModal);
   document.getElementById("modal-cancel").addEventListener("click", closeNotesModal);
@@ -576,7 +1092,10 @@ function wireEvents() {
   document.getElementById("modal-save").addEventListener("click", saveNotes);
 
   document.addEventListener("keydown", e => {
-    if (e.key === "Escape" && activeStudentId !== null) closeNotesModal();
+    if (e.key === "Escape") {
+      if (activeStudentId !== null) closeStudentPanel();
+      closeNotesModal();
+    }
   });
 }
 
@@ -591,4 +1110,6 @@ renderStats();
 renderTableHeader();
 renderRoster();
 renderAgencies();
+renderTemplates();
+renderProfile();
 wireEvents();

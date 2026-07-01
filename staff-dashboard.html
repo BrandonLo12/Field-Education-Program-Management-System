@@ -55,6 +55,20 @@
         <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-4 px-2">Navigation</p>
 
         <nav class="space-y-2">
+          <!-- Profile tab -->
+          <button class="sidebar-tab w-full" data-tab="profile">
+            <div class="sidebar-icon-wrap bg-slate-200">
+              <svg class="w-6 h-6 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0M19 21a7 7 0 10-14 0"/>
+              </svg>
+            </div>
+            <div class="text-left">
+              <p class="sidebar-label">Profile</p>
+              <p class="sidebar-sub">Your account information</p>
+            </div>
+          </button>
+
           <!-- Students tab -->
           <button class="sidebar-tab sidebar-active w-full" data-tab="students">
             <div class="sidebar-icon-wrap bg-teal-500">
@@ -80,6 +94,20 @@
             <div class="text-left">
               <p class="sidebar-label">Agencies</p>
               <p class="sidebar-sub">Contracts &amp; contacts</p>
+            </div>
+          </button>
+
+          <!-- Communications tab -->
+          <button class="sidebar-tab w-full" data-tab="communications">
+            <div class="sidebar-icon-wrap bg-slate-200">
+              <svg class="w-6 h-6 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+              </svg>
+            </div>
+            <div class="text-left">
+              <p class="sidebar-label">Email Templates</p>
+              <p class="sidebar-sub">Placement correspondence</p>
             </div>
           </button>
         </nav>
@@ -117,10 +145,10 @@
             </div>
             <select id="filter-cohort" class="filter-select">
               <option value="">All Cohorts</option>
-              <option value="Fall 2024">Fall 2024</option>
-              <option value="Fall 2025">Fall 2025</option>
               <option value="Spring 2023">Spring 2023</option>
               <option value="Spring 2024">Spring 2024</option>
+              <option value="Fall 2024">Fall 2024</option>
+              <option value="Fall 2025">Fall 2025</option>
             </select>
             <select id="filter-concentration" class="filter-select">
               <option value="">All Concentrations</option>
@@ -197,7 +225,76 @@
 
       </div>
 
+      <!-- ── Profile Tab ─────────────────────────────────────────────────── -->
+      <div id="tab-profile" class="hidden space-y-6">
+        <div id="profile-content"></div>
+      </div>
+
+      <!-- ── Communications Tab ───────────────────────────────────────────── -->
+      <div id="tab-communications" class="hidden space-y-6">
+
+        <!-- Filter bar -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 sm:p-5">
+          <div class="flex flex-wrap items-center gap-3">
+            <div class="relative flex-1 min-w-[200px]">
+              <svg class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z"/>
+              </svg>
+              <input id="template-search" type="text" placeholder="Search templates…"
+                class="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent" />
+            </div>
+            <select id="filter-template-category" class="filter-select">
+              <option value="">All Categories</option>
+              <option value="Accepted">Accepted</option>
+              <option value="On Hold">On Hold</option>
+              <option value="Denied">Denied</option>
+              <option value="General">General</option>
+            </select>
+            <button id="clear-template-filters" class="text-xs font-medium text-teal-600 hover:text-teal-700 px-2 py-2 whitespace-nowrap">
+              Clear filters
+            </button>
+          </div>
+        </div>
+
+        <!-- Template cards -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5" id="template-cards"></div>
+        <p id="template-empty" class="hidden text-center text-slate-400 text-sm py-10">No templates match your search.</p>
+
+      </div>
+
     </main>
+  </div>
+
+  <!-- Student Profile Panel -->
+  <div id="panel-backdrop" class="fixed inset-0 z-40 bg-slate-900/30 hidden" onclick="closeStudentPanel()"></div>
+  <div id="student-panel" class="fixed top-16 right-0 bottom-0 w-full sm:w-[460px] z-50 bg-white shadow-2xl border-l border-slate-100 flex flex-col hidden" style="transition: transform 0.3s ease;" >
+
+    <!-- Panel Header -->
+    <div class="px-6 pt-6 pb-4 border-b border-slate-100 flex items-center justify-between flex-shrink-0">
+      <p class="text-xs font-semibold text-teal-600 uppercase tracking-wider">Student Profile</p>
+      <button id="panel-close" onclick="closeStudentPanel()" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 transition-colors" aria-label="Close">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Panel Body (filled by JS) -->
+    <div id="panel-body" class="flex-1 overflow-y-auto px-6 py-5 space-y-6"></div>
+
+    <!-- Panel Notes Footer -->
+    <div class="flex-shrink-0 border-t border-slate-100 px-6 py-5 space-y-3 bg-slate-50/60">
+      <label class="text-xs font-semibold text-slate-400 uppercase tracking-widest block">Coordinator Notes</label>
+      <textarea id="panel-notes-textarea" rows="4"
+        class="w-full text-sm border border-slate-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent resize-none bg-white"
+        placeholder="Add notes about this student…"></textarea>
+      <div class="flex items-center justify-between">
+        <p class="text-xs text-slate-400" id="panel-save-status"></p>
+        <button id="panel-save-notes" class="px-4 py-2 text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 rounded-lg shadow-sm transition-colors">
+          Save Notes
+        </button>
+      </div>
+    </div>
   </div>
 
   <!-- Notes Modal -->
