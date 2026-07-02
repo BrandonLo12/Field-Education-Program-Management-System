@@ -567,7 +567,7 @@ function openStudentPanel(id) {
   document.getElementById("panel-body").innerHTML = `
     <!-- Avatar + name -->
     <div class="flex items-center gap-4">
-      <div class="w-16 h-16 rounded-2xl bg-[#002855] text-white flex items-center justify-center text-xl font-bold flex-shrink-0">${initials(s.name)}</div>
+      <div class="w-16 h-16 rounded-2xl bg-[#F05A22] text-white flex items-center justify-center text-xl font-bold flex-shrink-0">${initials(s.name)}</div>
       <div>
         <h2 class="text-xl font-bold text-slate-800 leading-tight">${s.name}</h2>
         <div class="mt-2">
@@ -745,6 +745,61 @@ function saveNotes() {
 }
 
 // ── Agency Renderer ───────────────────────────────────────────────────────────
+let activeCityFilter = "";
+
+function buildCityTabs() {
+  const cities = [...new Set(agencies.map(a => a.city))].sort();
+  const container = document.getElementById("agency-city-tabs");
+  container.innerHTML = "";
+
+  // "All" entry
+  const allBtn = document.createElement("button");
+  allBtn.className = "w-full flex items-center gap-3 px-4 py-3 text-left transition-colors agency-city-tab agency-city-active";
+  allBtn.dataset.city = "";
+  allBtn.innerHTML = `
+    <div class="w-8 h-8 rounded-lg bg-[#F05A22] flex items-center justify-center flex-shrink-0">
+      <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-4.724A1 1 0 013 14.382V5a1 1 0 011-1h4m0 0V2m0 2h4m0 0V2m0 2h4a1 1 0 011 1v9.382a1 1 0 01-.553.894L12 20m0 0l-3-1.5"/>
+      </svg>
+    </div>
+    <span class="text-sm font-semibold text-[#F05A22]">All Cities</span>`;
+  allBtn.addEventListener("click", () => setActiveCity(""));
+  container.appendChild(allBtn);
+
+  cities.forEach(city => {
+    const btn = document.createElement("button");
+    btn.className = "w-full flex items-center gap-3 px-4 py-3 text-left transition-colors agency-city-tab";
+    btn.dataset.city = city;
+    btn.innerHTML = `
+      <div class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0 city-icon-wrap">
+        <svg class="w-4 h-4 text-slate-500 city-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+      </div>
+      <span class="text-sm font-medium text-slate-600 city-label">${city}</span>`;
+    btn.addEventListener("click", () => setActiveCity(city));
+    container.appendChild(btn);
+  });
+}
+
+function setActiveCity(city) {
+  activeCityFilter = city;
+  document.querySelectorAll(".agency-city-tab").forEach(btn => {
+    const isActive = btn.dataset.city === city;
+    btn.classList.toggle("agency-city-active", isActive);
+    const iconWrap = btn.querySelector(".city-icon-wrap");
+    const icon = btn.querySelector(".city-icon");
+    const label = btn.querySelector(".city-label");
+    if (iconWrap) {
+      iconWrap.className = `w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 city-icon-wrap ${isActive ? "bg-[#F05A22]" : "bg-slate-100"}`;
+    }
+    if (icon) icon.className = `w-4 h-4 city-icon ${isActive ? "text-white" : "text-slate-500"}`;
+    if (label) label.className = `text-sm font-medium city-label ${isActive ? "text-[#F05A22] font-semibold" : "text-slate-600"}`;
+  });
+  renderAgencies();
+}
+
 function getAgencyFilters() {
   return {
     search: document.getElementById("agency-search").value.trim().toLowerCase(),
@@ -755,6 +810,7 @@ function getAgencyFilters() {
 function renderAgencies() {
   const { search, contract } = getAgencyFilters();
   const filtered = agencies.filter(a => {
+    if (activeCityFilter && a.city !== activeCityFilter) return false;
     if (search && !a.name.toLowerCase().includes(search)) return false;
     if (contract && a.contract !== contract) return false;
     return true;
@@ -1196,7 +1252,7 @@ function expandTemplate(id) {
 
 // ── Tab Switching ─────────────────────────────────────────────────────────────
 const TAB_META = {
-  home:           { heading: "Home" },
+  home:           { heading: "Welcome, " + staffProfile.name.replace(/^(Dr\.|Mr\.|Ms\.|Mrs\.|Prof\.)\s*/i, "") },
   students:       { heading: "Student Roster" },
   agencies:       { heading: "Agency Directory" },
   communications: { heading: "Email Templates" },
@@ -1244,7 +1300,7 @@ function resetFilters() {
 function resetAgencyFilters() {
   document.getElementById("agency-search").value = "";
   document.getElementById("filter-contract").value = "";
-  renderAgencies();
+  setActiveCity("");
 }
 
 function wireEvents() {
@@ -1257,8 +1313,10 @@ function wireEvents() {
   });
 
   document.getElementById("agency-search").addEventListener("input", renderAgencies);
-  document.getElementById("filter-contract").addEventListener("input", renderAgencies);
+  document.getElementById("filter-contract").addEventListener("change", renderAgencies);
   document.getElementById("clear-agency-filters").addEventListener("click", resetAgencyFilters);
+
+  buildCityTabs();
 
   document.getElementById("template-search").addEventListener("input", renderTemplates);
   document.getElementById("filter-template-category").addEventListener("input", renderTemplates);

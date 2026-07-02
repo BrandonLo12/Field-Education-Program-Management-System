@@ -424,10 +424,11 @@ function renderPlacementStatus() {
 const STD_TAB_META = {
   home:    { heading: "Welcome, " + student.name },
   profile: { heading: "Profile" },
+  timesheet: { heading: "Timesheet" },
 };
 
 function switchStudentTab(tab) {
-  ["home", "profile"].forEach(t => {
+  ["home", "profile", "timesheet"].forEach(t => {
     document.getElementById(`tab-${t}`).classList.toggle("hidden", t !== tab);
   });
 
