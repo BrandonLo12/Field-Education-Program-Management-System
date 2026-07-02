@@ -4,56 +4,56 @@ const agencies = [
     id: 1, name: "Community Health & Wellness Center",
     contact: "Dr. Sarah Johnson", title: "Director of Field Education",
     email: "s.johnson@chwc.org", phone: "(212) 555-0456",
-    address: "456 Park Avenue", county: "San Francisco County",
+    address: "456 Park Avenue", city: "San Francisco", county: "San Francisco County",
     contract: "Active",
   },
   {
     id: 2, name: "Bay Area Mental Health Services",
     contact: "Marcus Reid", title: "Community Outreach Manager",
     email: "m.reid@bamhs.org", phone: "(510) 555-0234",
-    address: "88 Broadway Blvd, Oakland, CA 94607", county: "Alameda County",
+    address: "88 Broadway Blvd, Oakland, CA 94607", city: "Oakland", county: "Alameda County",
     contract: "Active",
   },
   {
     id: 3, name: "Central Valley Youth Services",
     contact: "Lucia Flores", title: "Program Coordinator",
     email: "l.flores@cvys.org", phone: "(209) 555-0678",
-    address: "321 Oak Street, Modesto, CA 95354", county: "Stanislaus County",
+    address: "321 Oak Street, Modesto, CA 95354", city: "Modesto", county: "Stanislaus County",
     contract: "Pending",
   },
   {
     id: 4, name: "Sacramento Family Support Center",
     contact: "Thomas Nguyen", title: "Field Supervisor",
     email: "t.nguyen@sfsc.org", phone: "(916) 555-0321",
-    address: "750 Capitol Avenue, Sacramento, CA 95814", county: "Sacramento County",
+    address: "750 Capitol Avenue, Sacramento, CA 95814", city: "Sacramento", county: "Sacramento County",
     contract: "Active",
   },
   {
     id: 5, name: "Fresno Community Outreach",
     contact: "Angela Torres", title: "Social Work Supervisor",
     email: "a.torres@fco.org", phone: "(559) 555-0987",
-    address: "199 Fulton Street, Fresno, CA 93721", county: "Fresno County",
+    address: "199 Fulton Street, Fresno, CA 93721", city: "Fresno", county: "Fresno County",
     contract: "Active",
   },
   {
     id: 6, name: "Oakland Social Services Agency",
     contact: "Derek Miles", title: "Agency Director",
     email: "d.miles@ossa.org", phone: "(510) 555-0112",
-    address: "500 Lake Merritt Blvd, Oakland, CA 94610", county: "Alameda County",
+    address: "500 Lake Merritt Blvd, Oakland, CA 94610", city: "Oakland", county: "Alameda County",
     contract: "Expired",
   },
   {
     id: 7, name: "Stockton Behavioral Health Clinic",
     contact: "Patricia Lim", title: "Clinical Director",
     email: "p.lim@sbhc.org", phone: "(209) 555-0445",
-    address: "1040 W. Fremont Street, Stockton, CA 95203", county: "San Joaquin County",
+    address: "1040 W. Fremont Street, Stockton, CA 95203", city: "Stockton", county: "San Joaquin County",
     contract: "Active",
   },
   {
     id: 8, name: "San Jose Healthcare Partners",
     contact: "James Okafor", title: "Placement Liaison",
     email: "j.okafor@sjhp.org", phone: "(408) 555-0773",
-    address: "2200 Alum Rock Avenue, San Jose, CA 95116", county: "Santa Clara County",
+    address: "2200 Alum Rock Avenue, San Jose, CA 95116", city: "San Jose", county: "Santa Clara County",
     contract: "Pending",
   },
 ];
@@ -71,90 +71,110 @@ const roster = [
   {
     id: 1, name: "Jane Smith", phone: "(415) 555-0123", cohort: "Fall 2024",
     format: "Hybrid", enrollment: "Full-Time",
-    city: "San Francisco", county: "San Francisco County",
+    address: "842 Valencia St", city: "San Francisco", county: "San Francisco County",
     concentration: "Behavioral Health", setting: "Community Mental Health Center",
     fieldStart: "Feb 3, 2026", fieldEnd: "Aug 28, 2026",
+    fieldInstructor: "Dr. Sarah Johnson",
+    fieldAgency: "Community Health & Wellness Center",
     liaison: "Annette", status: "Active",
     notes: "Strong rapport with site supervisor. On track for 500-hour requirement by August.",
   },
   {
     id: 2, name: "Marcus Lee", phone: "(209) 555-0456", cohort: "Spring 2024",
     format: "Online", enrollment: "Part-Time",
-    city: "Stockton", county: "San Joaquin County",
+    address: "1220 N. Wilson Way", city: "Stockton", county: "San Joaquin County",
     concentration: "Health Care", setting: "Outpatient Clinic",
     fieldStart: "Jan 20, 2026", fieldEnd: "Jul 31, 2026",
+    fieldInstructor: "Marcus Reid",
+    fieldAgency: "Stockton Behavioral Health Clinic",
     liaison: "Vanessa", status: "Active",
     notes: "",
   },
   {
     id: 3, name: "Priya Patel", phone: "(916) 555-0789", cohort: "Fall 2025",
     format: "Hybrid", enrollment: "Full-Time",
-    city: "Sacramento", county: "Sacramento County",
+    address: "3305 Freeport Blvd", city: "Sacramento", county: "Sacramento County",
     concentration: "Behavioral Health", setting: "School",
     fieldStart: "Sep 8, 2026", fieldEnd: "Apr 30, 2027",
+    fieldInstructor: "—",
+    fieldAgency: "—",
     liaison: "Halide", status: "Pending",
     notes: "Awaiting signed affiliation agreement from agency before start date can be confirmed.",
   },
   {
     id: 4, name: "Diego Ramirez", phone: "(209) 555-0234", cohort: "Spring 2024",
     format: "Online", enrollment: "Full-Time",
-    city: "Modesto", county: "Stanislaus County",
+    address: "715 Sycamore Ave", city: "Modesto", county: "Stanislaus County",
     concentration: "Health Care", setting: "Hospital",
     fieldStart: "Jan 20, 2026", fieldEnd: "Aug 14, 2026",
+    fieldInstructor: "Thomas Nguyen",
+    fieldAgency: "Central Valley Youth Services",
     liaison: "Annette", status: "Active",
     notes: "",
   },
   {
     id: 5, name: "Olivia Chen", phone: "(510) 555-0345", cohort: "Spring 2023",
     format: "Hybrid", enrollment: "Part-Time",
-    city: "Oakland", county: "Alameda County",
+    address: "509 Lake Merritt Blvd", city: "Oakland", county: "Alameda County",
     concentration: "Behavioral Health", setting: "Non-profit Organization",
     fieldStart: "Jan 16, 2025", fieldEnd: "May 30, 2025",
+    fieldInstructor: "Derek Miles",
+    fieldAgency: "Oakland Social Services Agency",
     liaison: "Vanessa", status: "Completed",
     notes: "Completed all required hours on 5/30. Final evaluation submitted by site supervisor.",
   },
   {
     id: 6, name: "Tyler Brooks", phone: "(559) 555-0567", cohort: "Fall 2024",
     format: "Online", enrollment: "Full-Time",
-    city: "Fresno", county: "Fresno County",
+    address: "2148 N. Fresno St", city: "Fresno", county: "Fresno County",
     concentration: "Health Care", setting: "Residential Facility",
     fieldStart: "Feb 3, 2026", fieldEnd: "Aug 28, 2026",
+    fieldInstructor: "Angela Torres",
+    fieldAgency: "Fresno Community Outreach",
     liaison: "Halide", status: "Active",
     notes: "Flagged low hours logged for two consecutive weeks — following up with agency supervisor.",
   },
   {
     id: 7, name: "Amara Johnson", phone: "(408) 555-0678", cohort: "Fall 2025",
     format: "Hybrid", enrollment: "Full-Time",
-    city: "San Jose", county: "Santa Clara County",
+    address: "1640 Alum Rock Ave", city: "San Jose", county: "Santa Clara County",
     concentration: "Behavioral Health", setting: "Government Agency",
     fieldStart: "Sep 8, 2026", fieldEnd: "Apr 30, 2027",
+    fieldInstructor: "—",
+    fieldAgency: "—",
     liaison: "Annette", status: "Pending",
     notes: "",
   },
   {
     id: 8, name: "Kevin Nguyen", phone: "(209) 555-0890", cohort: "Spring 2024",
     format: "Online", enrollment: "Part-Time",
-    city: "Stockton", county: "San Joaquin County",
+    address: "880 E. Hammer Ln", city: "Stockton", county: "San Joaquin County",
     concentration: "Health Care", setting: "Outpatient Clinic",
     fieldStart: "Jan 20, 2026", fieldEnd: "Jul 31, 2026",
+    fieldInstructor: "Patricia Lim",
+    fieldAgency: "Stockton Behavioral Health Clinic",
     liaison: "Vanessa", status: "Active",
     notes: "",
   },
   {
     id: 9, name: "Sofia Garcia", phone: "(916) 555-0912", cohort: "Fall 2024",
     format: "Hybrid", enrollment: "Full-Time",
-    city: "Sacramento", county: "Sacramento County",
+    address: "4210 Freeport Blvd", city: "Sacramento", county: "Sacramento County",
     concentration: "Behavioral Health", setting: "Community Mental Health Center",
     fieldStart: "Feb 3, 2026", fieldEnd: "Aug 28, 2026",
+    fieldInstructor: "Dr. Sarah Johnson",
+    fieldAgency: "Sacramento Family Support Center",
     liaison: "Halide", status: "Active",
     notes: "Mid-placement evaluation scheduled for next site visit.",
   },
   {
     id: 10, name: "Ben Carter", phone: "(209) 555-0111", cohort: "Fall 2025",
     format: "Online", enrollment: "Full-Time",
-    city: "Stockton", county: "San Joaquin County",
+    address: "305 N. El Dorado St", city: "Stockton", county: "San Joaquin County",
     concentration: "Health Care", setting: "Hospital",
     fieldStart: "Sep 8, 2026", fieldEnd: "Apr 30, 2027",
+    fieldInstructor: "—",
+    fieldAgency: "—",
     liaison: "Annette", status: "Pending",
     notes: "",
   },
@@ -326,7 +346,9 @@ function renderStats() {
     { label: "Completed", value: completed, icon: "M5 13l4 4L19 7", color: "slate" },
   ];
 
-  document.getElementById("stat-cards").innerHTML = stats.map(s => `
+  const statEl = document.getElementById("stat-cards");
+  if (!statEl) return;
+  statEl.innerHTML = stats.map(s => `
     <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 flex items-center gap-3">
       <div class="w-10 h-10 rounded-xl bg-${s.color}-50 flex items-center justify-center flex-shrink-0">
         <svg class="w-5 h-5 text-${s.color}-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -399,14 +421,140 @@ function renderRoster() {
   });
 }
 
+// ── California Cities & Counties ─────────────────────────────────────────────
+const CA_LOCATIONS = [
+  "Alameda, Alameda County","Albany, Alameda County","Berkeley, Alameda County","Fremont, Alameda County","Hayward, Alameda County","Livermore, Alameda County","Oakland, Alameda County","Pleasanton, Alameda County","San Leandro, Alameda County","Union City, Alameda County",
+  "Markleeville, Alpine County",
+  "Amador City, Amador County","Jackson, Amador County","Sutter Creek, Amador County",
+  "Chico, Butte County","Oroville, Butte County","Paradise, Butte County",
+  "Angels Camp, Calaveras County","San Andreas, Calaveras County",
+  "Colusa, Colusa County","Williams, Colusa County",
+  "Antioch, Contra Costa County","Concord, Contra Costa County","Martinez, Contra Costa County","Richmond, Contra Costa County","Walnut Creek, Contra Costa County",
+  "Crescent City, Del Norte County",
+  "Placerville, El Dorado County","South Lake Tahoe, El Dorado County",
+  "Clovis, Fresno County","Fresno, Fresno County","Hanford, Kings County","Lemoore, Kings County","Selma, Fresno County",
+  "Willows, Glenn County",
+  "Arcata, Humboldt County","Eureka, Humboldt County","Fortuna, Humboldt County",
+  "Calexico, Imperial County","El Centro, Imperial County",
+  "Bishop, Inyo County",
+  "Bakersfield, Kern County","Delano, Kern County","Ridgecrest, Kern County",
+  "Lakeport, Lake County",
+  "Susanville, Lassen County",
+  "Burbank, Los Angeles County","Carson, Los Angeles County","Compton, Los Angeles County","El Monte, Los Angeles County","Glendale, Los Angeles County","Inglewood, Los Angeles County","Long Beach, Los Angeles County","Los Angeles, Los Angeles County","Pasadena, Los Angeles County","Pomona, Los Angeles County","Santa Clarita, Los Angeles County","Santa Monica, Los Angeles County","Torrance, Los Angeles County",
+  "Madera, Madera County",
+  "Novato, Marin County","San Rafael, Marin County",
+  "Mariposa, Mariposa County",
+  "Ukiah, Mendocino County",
+  "Los Banos, Merced County","Merced, Merced County",
+  "Alturas, Modoc County",
+  "Mammoth Lakes, Mono County",
+  "Carmel, Monterey County","Monterey, Monterey County","Salinas, Monterey County","Seaside, Monterey County",
+  "Napa, Napa County","St. Helena, Napa County",
+  "Grass Valley, Nevada County","Nevada City, Nevada County",
+  "Anaheim, Orange County","Costa Mesa, Orange County","Fullerton, Orange County","Garden Grove, Orange County","Huntington Beach, Orange County","Irvine, Orange County","Orange, Orange County","Santa Ana, Orange County",
+  "Auburn, Placer County","Rocklin, Placer County","Roseville, Placer County",
+  "Quincy, Plumas County",
+  "Hemet, Riverside County","Moreno Valley, Riverside County","Palm Springs, Riverside County","Riverside, Riverside County","Temecula, Riverside County",
+  "Citrus Heights, Sacramento County","Elk Grove, Sacramento County","Folsom, Sacramento County","Rancho Cordova, Sacramento County","Sacramento, Sacramento County",
+  "Hollister, San Benito County",
+  "Fontana, San Bernardino County","Ontario, San Bernardino County","Rancho Cucamonga, San Bernardino County","San Bernardino, San Bernardino County","Victorville, San Bernardino County",
+  "Chula Vista, San Diego County","El Cajon, San Diego County","Escondido, San Diego County","Oceanside, San Diego County","San Diego, San Diego County","Vista, San Diego County",
+  "San Francisco, San Francisco County",
+  "Lodi, San Joaquin County","Manteca, San Joaquin County","Stockton, San Joaquin County","Tracy, San Joaquin County",
+  "Atascadero, San Luis Obispo County","Paso Robles, San Luis Obispo County","San Luis Obispo, San Luis Obispo County",
+  "Daly City, San Mateo County","Redwood City, San Mateo County","San Mateo, San Mateo County","South San Francisco, San Mateo County",
+  "Lompoc, Santa Barbara County","Santa Barbara, Santa Barbara County","Santa Maria, Santa Barbara County",
+  "Campbell, Santa Clara County","Milpitas, Santa Clara County","Mountain View, Santa Clara County","Palo Alto, Santa Clara County","San Jose, Santa Clara County","Santa Clara, Santa Clara County","Sunnyvale, Santa Clara County",
+  "Santa Cruz, Santa Cruz County","Scotts Valley, Santa Cruz County","Watsonville, Santa Cruz County",
+  "Redding, Shasta County",
+  "Downieville, Sierra County",
+  "Mt. Shasta, Siskiyou County","Yreka, Siskiyou County",
+  "Fairfield, Solano County","Vacaville, Solano County","Vallejo, Solano County",
+  "Petaluma, Sonoma County","Rohnert Park, Sonoma County","Santa Rosa, Sonoma County",
+  "Ceres, Stanislaus County","Modesto, Stanislaus County","Turlock, Stanislaus County",
+  "Yuba City, Sutter County",
+  "Red Bluff, Tehama County",
+  "Weaverville, Trinity County",
+  "Porterville, Tulare County","Tulare, Tulare County","Visalia, Tulare County",
+  "Sonora, Tuolumne County",
+  "Oxnard, Ventura County","Thousand Oaks, Ventura County","Ventura, Ventura County",
+  "Davis, Yolo County","Woodland, Yolo County",
+  "Marysville, Yuba County",
+].sort();
+
 // ── Student Profile Panel ────────────────────────────────────────────────────
 let activeStudentId = null;
 
 function panelInfoRow(label, value) {
   return `<div>
-    <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-0.5">${label}</p>
-    <p class="text-sm text-slate-700 leading-snug">${value}</p>
+    <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1">${label}</p>
+    <p class="text-base text-slate-700 leading-snug">${value}</p>
   </div>`;
+}
+
+function toDateInput(str) {
+  if (!str || str === "—") return "";
+  const d = new Date(str);
+  if (isNaN(d)) return "";
+  return d.toISOString().split("T")[0];
+}
+
+function fieldworkDate(label, currentValue) {
+  return `<div>
+    <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1">${label}</p>
+    <input type="date" value="${toDateInput(currentValue)}"
+      class="w-full text-base text-slate-700 bg-white border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#F05A22] focus:border-transparent cursor-pointer" />
+  </div>`;
+}
+
+function fieldworkSelect(label, currentValue, options, id = "") {
+  const idAttr = id ? ` id="${id}"` : "";
+  const opts = options.map(o =>
+    `<option value="${o}" ${o === currentValue ? "selected" : ""}>${o}</option>`
+  ).join("");
+  return `<div>
+    <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1">${label}</p>
+    <select${idAttr} class="w-full text-base text-slate-700 bg-white border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#F05A22] focus:border-transparent cursor-pointer">
+      ${opts}
+    </select>
+  </div>`;
+}
+
+function toggleInstructorOther(value) {
+  const wrap = document.getElementById("panel-instructor-other-wrap");
+  const input = document.getElementById("panel-instructor-other-input");
+  if (!wrap) return;
+  if (value === "Other") {
+    wrap.classList.remove("hidden");
+    input.focus();
+  } else {
+    wrap.classList.add("hidden");
+    input.value = "";
+  }
+}
+
+function instructorForAgency(agencyName, currentInstructor) {
+  const agency = agencies.find(a => a.name === agencyName);
+  const options = ["—"];
+  if (agency) options.push(agency.contact);
+  if (currentInstructor && currentInstructor !== "—" && currentInstructor !== "Other" && !options.includes(currentInstructor)) {
+    options.push(currentInstructor);
+  }
+  options.push("Other");
+  return options;
+}
+
+function agenciesForCounty(county, currentAgency) {
+  const matched = agencies
+    .filter(a => a.county === county)
+    .map(a => a.name)
+    .sort();
+  const options = ["—", ...matched];
+  // If the current agency isn't in the filtered list, add it so the select still shows it
+  if (currentAgency && currentAgency !== "—" && !options.includes(currentAgency)) {
+    options.push(currentAgency);
+  }
+  return options;
 }
 
 function openStudentPanel(id) {
@@ -419,7 +567,7 @@ function openStudentPanel(id) {
   document.getElementById("panel-body").innerHTML = `
     <!-- Avatar + name -->
     <div class="flex items-center gap-4">
-      <div class="w-16 h-16 rounded-2xl bg-teal-100 text-teal-700 flex items-center justify-center text-xl font-bold flex-shrink-0">${initials(s.name)}</div>
+      <div class="w-16 h-16 rounded-2xl bg-[#002855] text-white flex items-center justify-center text-xl font-bold flex-shrink-0">${initials(s.name)}</div>
       <div>
         <h2 class="text-xl font-bold text-slate-800 leading-tight">${s.name}</h2>
         <div class="mt-2">
@@ -430,21 +578,21 @@ function openStudentPanel(id) {
       </div>
     </div>
 
-    <!-- Personal Info -->
+    <!-- Personal Information -->
     <div class="bg-slate-50 rounded-2xl p-4 space-y-3">
-      <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Personal Information</p>
-      <div class="grid grid-cols-2 gap-3">
+      <p class="text-sm font-semibold text-slate-600 uppercase tracking-wider">Personal Information</p>
+      <div class="grid grid-cols-2 gap-4">
         ${panelInfoRow("Phone", s.phone)}
-        ${panelInfoRow("Pacific Email", `<a href="mailto:${s.email}" class="text-indigo-500 hover:underline">${s.email}</a>`)}
+        ${panelInfoRow("Student Email", `<a href="mailto:${s.email}" class="text-[#F05A22] hover:underline">${s.email}</a>`)}
+        ${panelInfoRow("Address", s.address || "—")}
         ${panelInfoRow("City", s.city)}
-        ${panelInfoRow("County", s.county)}
       </div>
     </div>
 
-    <!-- Academic Info -->
+    <!-- Academic Information -->
     <div class="bg-slate-50 rounded-2xl p-4 space-y-3">
-      <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Academic Information</p>
-      <div class="grid grid-cols-2 gap-3">
+      <p class="text-sm font-semibold text-slate-600 uppercase tracking-wider">Academic Information</p>
+      <div class="grid grid-cols-2 gap-4">
         ${panelInfoRow("Cohort", s.cohort)}
         ${panelInfoRow("Concentration", s.concentration)}
         ${panelInfoRow("Program Format", s.format)}
@@ -452,19 +600,72 @@ function openStudentPanel(id) {
       </div>
     </div>
 
-    <!-- Placement Info -->
+    <!-- Fieldwork Information -->
     <div class="bg-slate-50 rounded-2xl p-4 space-y-3">
-      <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Placement Information</p>
-      <div class="grid grid-cols-2 gap-3">
-        ${panelInfoRow("Placement Status", s.status)}
-        ${panelInfoRow("Field Liaison", s.liaison)}
-        ${panelInfoRow("Location", `${s.city}, ${s.county}`)}
-        ${panelInfoRow("Setting", s.setting || "—")}
-        ${panelInfoRow("Start Date", s.fieldStart || "—")}
-        ${panelInfoRow("End Date", s.fieldEnd || "—")}
+      <p class="text-sm font-semibold text-slate-600 uppercase tracking-wider">Fieldwork Information</p>
+      <div class="grid grid-cols-2 gap-4">
+        ${fieldworkSelect("City and County", `${s.city}, ${s.county}`,
+            [...new Set(agencies.map(a => `${a.city}, ${a.county}`))].sort(),
+            "panel-city-county")}
+        ${fieldworkSelect("Field Work Location", s.fieldAgency || "—",
+            agenciesForCounty(s.county, s.fieldAgency),
+            "panel-field-location")}
+        ${fieldworkDate("Start Date", s.fieldStart)}
+        ${fieldworkDate("End Date", s.fieldEnd)}
+        ${fieldworkSelect("Field Instructor", s.fieldInstructor || "—",
+            instructorForAgency(s.fieldAgency, s.fieldInstructor),
+            "panel-field-instructor")}
+        ${fieldworkSelect("Field Liaison", s.liaison,
+            ["Annette","Halide","Vanessa"])}
+        ${fieldworkSelect("Placement Status", s.status,
+            ["Active","Pending","Completed"])}
+        <div id="panel-instructor-other-wrap" class="col-span-2 hidden">
+          <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1">Field Instructor Name</p>
+          <input type="text" id="panel-instructor-other-input" placeholder="Enter field instructor name"
+            class="w-full text-base text-slate-700 bg-white border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#F05A22] focus:border-transparent" />
+        </div>
       </div>
     </div>
   `;
+
+  // Wire city/county → reset + filter field work location and field instructor
+  document.getElementById("panel-city-county").addEventListener("change", function () {
+    const parts = this.value.split(", ");
+    const county = parts.length > 1 ? parts[parts.length - 1] : "";
+
+    const locationSel = document.getElementById("panel-field-location");
+    const newLocationOptions = agenciesForCounty(county, null);
+    locationSel.innerHTML = newLocationOptions.map(o =>
+      `<option value="${o}" ${o === "—" ? "selected" : ""}>${o}</option>`
+    ).join("");
+    locationSel.value = "—";
+
+    const instrSel = document.getElementById("panel-field-instructor");
+    instrSel.innerHTML = `<option value="—" selected>—</option><option value="Other">Other</option>`;
+    instrSel.value = "—";
+    toggleInstructorOther("—");
+  });
+
+  // Wire field work location → reset + filter field instructor
+  document.getElementById("panel-field-location").addEventListener("change", function () {
+    const instrSel = document.getElementById("panel-field-instructor");
+    const newOptions = instructorForAgency(this.value, null);
+    instrSel.innerHTML = newOptions.map(o =>
+      `<option value="${o}" ${o === "—" ? "selected" : ""}>${o}</option>`
+    ).join("");
+    instrSel.value = "—";
+    toggleInstructorOther("—");
+  });
+
+  // Wire field instructor "Other" → show/hide text input
+  document.getElementById("panel-field-instructor").addEventListener("change", function () {
+    toggleInstructorOther(this.value);
+  });
+
+  // Show "Other" input if student already has a custom instructor name
+  if (document.getElementById("panel-field-instructor").value === "Other") {
+    toggleInstructorOther("Other");
+  }
 
   document.getElementById("panel-notes-textarea").value = s.notes || "";
   document.getElementById("panel-save-status").textContent = "";
@@ -668,7 +869,7 @@ function renderProfile() {
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
               </svg>
             </div>
-            <h3 class="font-semibold text-slate-700 text-sm">Contact Information</h3>
+            <h3 class="font-semibold text-slate-700 text-base">Contact Information</h3>
           </div>
           <div class="px-6 divide-y divide-slate-50">
             ${profileInfoRow("Full Name", staffProfile.name)}
@@ -688,7 +889,7 @@ function renderProfile() {
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
               </svg>
             </div>
-            <h3 class="font-semibold text-slate-700 text-sm">Current Caseload</h3>
+            <h3 class="font-semibold text-slate-700 text-base">Current Caseload</h3>
           </div>
           <div class="px-6 py-4 grid grid-cols-2 sm:grid-cols-4 gap-4">
             ${[
@@ -995,32 +1196,20 @@ function expandTemplate(id) {
 
 // ── Tab Switching ─────────────────────────────────────────────────────────────
 const TAB_META = {
-  students: {
-    heading: "Student Roster",
-    subheading: "Monitor placements, liaisons, and notes across your caseload.",
-  },
-  agencies: {
-    heading: "Agency Directory",
-    subheading: "View contracted agencies, contact information, and contract status.",
-  },
-  communications: {
-    heading: "Email Templates",
-    subheading: "Ready-to-use email templates for student placement correspondence.",
-  },
-  profile: {
-    heading: "Profile",
-    subheading: "Your account details and current caseload overview.",
-  },
+  home:           { heading: "Home" },
+  students:       { heading: "Student Roster" },
+  agencies:       { heading: "Agency Directory" },
+  communications: { heading: "Email Templates" },
+  profile:        { heading: "Profile" },
 };
 
-let activeTab = "students";
+let activeTab = "home";
 
 function switchTab(tab) {
   activeTab = tab;
-  document.getElementById("tab-students").classList.toggle("hidden", tab !== "students");
-  document.getElementById("tab-agencies").classList.toggle("hidden", tab !== "agencies");
-  document.getElementById("tab-communications").classList.toggle("hidden", tab !== "communications");
-  document.getElementById("tab-profile").classList.toggle("hidden", tab !== "profile");
+  ["home", "students", "agencies", "communications", "profile"].forEach(t => {
+    document.getElementById(`tab-${t}`).classList.toggle("hidden", t !== tab);
+  });
   document.querySelectorAll(".sidebar-tab").forEach(btn => {
     const isActive = btn.dataset.tab === tab;
     btn.classList.toggle("sidebar-active", isActive);
@@ -1028,18 +1217,17 @@ function switchTab(tab) {
     const icon     = btn.querySelector("svg");
     if (isActive) {
       iconWrap.classList.remove("bg-slate-200");
-      iconWrap.classList.add("bg-teal-500");
-      icon.classList.remove("text-slate-500");
+      iconWrap.classList.add("bg-orange-600");
+      icon.classList.remove("text-slate-300");
       icon.classList.add("text-white");
     } else {
-      iconWrap.classList.remove("bg-teal-500");
+      iconWrap.classList.remove("bg-orange-600");
       iconWrap.classList.add("bg-slate-200");
       icon.classList.remove("text-white");
-      icon.classList.add("text-slate-500");
+      icon.classList.add("text-slate-300");
     }
   });
-  document.getElementById("page-heading").textContent    = TAB_META[tab].heading;
-  document.getElementById("page-subheading").textContent = TAB_META[tab].subheading;
+  document.getElementById("page-heading").textContent = TAB_META[tab].heading;
 }
 
 // ── Event Wiring ─────────────────────────────────────────────────────────────
@@ -1093,18 +1281,139 @@ function wireEvents() {
 
   document.addEventListener("keydown", e => {
     if (e.key === "Escape") {
+      document.getElementById("avatar-dropdown").classList.add("hidden");
+      closeSettings();
       if (activeStudentId !== null) closeStudentPanel();
       closeNotesModal();
     }
   });
+
+  document.addEventListener("click", e => {
+    const avatarWrap = document.getElementById("avatar-menu-wrap");
+    const avatarDd   = document.getElementById("avatar-dropdown");
+    if (avatarWrap && !avatarWrap.contains(e.target)) avatarDd.classList.add("hidden");
+
+    const notifWrap = document.getElementById("notif-wrap");
+    const notifDd   = document.getElementById("notif-dropdown");
+    if (notifWrap && !notifWrap.contains(e.target)) notifDd.classList.add("hidden");
+  });
+}
+
+// ── Theme Management ──────────────────────────────────────────────────────────
+const THEME_KEY = "fepms-theme";
+
+function applyTheme(mode) {
+  const isDark = mode === "dark" ||
+    (mode === "auto" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  document.documentElement.classList.toggle("dark", isDark);
+  localStorage.setItem(THEME_KEY, mode);
+  document.querySelectorAll(".theme-option").forEach(btn => {
+    btn.classList.toggle("theme-option-active", btn.dataset.theme === mode);
+  });
+}
+
+function initTheme() {
+  const saved = localStorage.getItem(THEME_KEY) || "auto";
+  applyTheme(saved);
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+    if ((localStorage.getItem(THEME_KEY) || "auto") === "auto") applyTheme("auto");
+  });
+}
+
+// ── Avatar Dropdown ───────────────────────────────────────────────────────────
+function toggleAvatarDropdown() {
+  document.getElementById("avatar-dropdown").classList.toggle("hidden");
+}
+
+function openSettings() {
+  document.getElementById("avatar-dropdown").classList.add("hidden");
+  document.getElementById("settings-modal").classList.remove("hidden");
+}
+
+function closeSettings() {
+  document.getElementById("settings-modal").classList.add("hidden");
+}
+
+function handleExit() {
+  if (confirm("Sign out of the Field Education Program?")) {
+    document.body.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:system-ui,sans-serif;background:#f8fafc;">
+        <div style="text-align:center;color:#64748b;padding:2rem">
+          <p style="font-size:1.5rem;font-weight:700;color:#1e293b;margin-bottom:0.5rem">Signed Out</p>
+          <p>You have been signed out of the Field Education Program.</p>
+        </div>
+      </div>`;
+  }
+}
+
+// ── Notifications ─────────────────────────────────────────────────────────────
+function buildNotifications() {
+  const needsPlacement = roster.filter(s => s.status === "Pending");
+  const newlyAdded     = roster.filter(s => s.cohort === "Fall 2025");
+  const contractAlerts = agencies.filter(a => a.contract === "Pending" || a.contract === "Expired");
+
+  function notifSection(title, dotCls, items, itemHtml) {
+    if (!items.length) return "";
+    return `
+      <div class="px-4 pt-3 pb-1">
+        <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-2">${title}</p>
+        <div class="space-y-1">
+          ${items.map(itemHtml).join("")}
+        </div>
+      </div>`;
+  }
+
+  function notifRow(label, sub, dotCls) {
+    return `<div class="flex items-start gap-2.5 py-2">
+      <span class="mt-1.5 w-2 h-2 rounded-full flex-shrink-0 ${dotCls}"></span>
+      <div>
+        <p class="text-sm font-medium text-slate-700 leading-snug">${label}</p>
+        ${sub ? `<p class="text-xs text-slate-400 mt-0.5">${sub}</p>` : ""}
+      </div>
+    </div>`;
+  }
+
+  const html =
+    notifSection("Needs Placement", "bg-amber-400", needsPlacement,
+      s => notifRow(s.name, `${s.cohort} · ${s.concentration}`, "bg-amber-400")) +
+    notifSection("Newly Added", "bg-sky-400", newlyAdded,
+      s => notifRow(s.name, `Added · ${s.cohort}`, "bg-sky-400")) +
+    notifSection("Contract Updates", "bg-red-400", contractAlerts,
+      a => notifRow(a.name, `Contract ${a.contract}`, a.contract === "Expired" ? "bg-red-400" : "bg-amber-400"));
+
+  const panel = document.getElementById("notif-dropdown");
+  panel.innerHTML = `
+    <div class="px-4 py-2.5 border-b border-slate-100 flex items-center justify-between">
+      <p class="font-semibold text-sm text-slate-800">Notifications</p>
+      <span class="text-xs text-white bg-[#F05A22] rounded-full px-2 py-0.5 font-semibold">
+        ${needsPlacement.length + newlyAdded.length + contractAlerts.length}
+      </span>
+    </div>
+    <div class="max-h-[420px] overflow-y-auto divide-y divide-slate-50">
+      ${html}
+    </div>`;
+}
+
+function toggleNotifications() {
+  const dd = document.getElementById("notif-dropdown");
+  const isHidden = dd.classList.toggle("hidden");
+  if (!isHidden) buildNotifications();
+  document.getElementById("avatar-dropdown").classList.add("hidden");
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 const today = new Date();
-document.getElementById("nav-date").textContent =
-  today.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
-document.getElementById("footer-year").textContent = today.getFullYear();
+const yearEl = document.getElementById("footer-year");
+if (yearEl) yearEl.textContent = today.getFullYear();
 
+const staffNameEl = document.getElementById("avatar-staff-name");
+if (staffNameEl) staffNameEl.textContent = staffProfile.name;
+const staffTitleEl = document.getElementById("avatar-staff-title");
+if (staffTitleEl) staffTitleEl.textContent = staffProfile.title;
+document.getElementById("page-heading").textContent = TAB_META.home.heading;
+
+wireEvents();
+initTheme();
 loadSavedNotes();
 renderStats();
 renderTableHeader();
@@ -1112,4 +1421,3 @@ renderRoster();
 renderAgencies();
 renderTemplates();
 renderProfile();
-wireEvents();

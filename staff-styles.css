@@ -16,7 +16,7 @@
   transition: color 0.15s ease;
 }
 .th-cell.sortable:hover {
-  color: #0f766e;
+  color: #F05A22;
 }
 .th-cell.sortable .sort-arrow {
   display: inline-block;
@@ -52,12 +52,12 @@
   border: 2px solid transparent;
 }
 .sidebar-tab:hover {
-  background: #f0fdfa;
+  background: rgba(255,255,255,0.08);
 }
 .sidebar-tab.sidebar-active {
-  background: #f0fdfa;
-  border-color: #99f6e4;
-  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.08);
+  background: rgba(255,255,255,0.12);
+  border-color: #F05A22;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
 }
 .sidebar-icon-wrap {
   width: 3rem;
@@ -70,19 +70,21 @@
   transition: background 0.15s ease;
 }
 .sidebar-label {
-  font-size: 1rem;
+  font-size: 0.9375rem;
   font-weight: 700;
-  color: #1e293b;
+  color: rgba(255,255,255,0.85);
   line-height: 1.3;
+  white-space: nowrap;
 }
 .sidebar-tab.sidebar-active .sidebar-label {
-  color: #0f766e;
+  color: #FFB88C;
 }
 .sidebar-sub {
   font-size: 0.75rem;
-  color: #94a3b8;
+  color: rgba(255,255,255,0.4);
   margin-top: 0.125rem;
 }
+aside .sidebar-icon-wrap.bg-slate-200 { background-color: rgba(255,255,255,0.12) !important; }
 
 /* Filter dropdowns */
 .filter-select {
@@ -96,7 +98,7 @@
 }
 .filter-select:focus {
   outline: none;
-  box-shadow: 0 0 0 2px #2dd4bf;
+  box-shadow: 0 0 0 2px #F05A22;
   border-color: transparent;
 }
 
@@ -138,5 +140,54 @@ main > *:nth-child(4) { animation-delay: 0.2s; }
   transition: box-shadow 0.2s ease;
 }
 .bg-white:hover {
-  box-shadow: 0 4px 20px -4px rgba(20, 184, 166, 0.1), 0 2px 8px -2px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 20px -4px rgba(240, 90, 34, 0.10), 0 2px 8px -2px rgba(0, 0, 0, 0.06);
 }
+
+/* ── Theme Toggle Buttons ── */
+.theme-option {
+  color: #64748b;
+  border-color: #e2e8f0;
+  background: transparent;
+}
+.theme-option:hover {
+  border-color: #cbd5e1;
+  color: #475569;
+}
+.theme-option-active {
+  border-color: #6366f1 !important;
+  color: #4338ca !important;
+  background-color: #eef2ff !important;
+  font-weight: 600;
+}
+
+/* ── Dark Mode ── */
+html.dark body { background-color: #0f172a; }
+html.dark #header-left { background-color: #001a3a !important; }
+html.dark #header-right { background-color: #0f172a !important; }
+html.dark aside { background-color: #001a3a !important; border-color: rgba(255,255,255,0.08) !important; }
+html.dark .bg-white { background-color: #1e293b !important; }
+html.dark .bg-white:hover { box-shadow: 0 4px 20px -4px rgba(0,0,0,0.5) !important; }
+html.dark .bg-slate-50 { background-color: #0f172a !important; }
+html.dark .border-slate-100 { border-color: #334155 !important; }
+html.dark .border-slate-50 { border-color: #1e293b !important; }
+html.dark .divide-slate-50 > :not([hidden]) ~ :not([hidden]) { border-color: #334155 !important; }
+html.dark .border-slate-200 { border-color: #475569 !important; }
+html.dark .text-slate-800 { color: #f1f5f9 !important; }
+html.dark .text-slate-700 { color: #e2e8f0 !important; }
+html.dark .text-slate-600 { color: #cbd5e1 !important; }
+html.dark .text-slate-500 { color: #94a3b8 !important; }
+html.dark .bg-slate-100 { background-color: #334155 !important; }
+html.dark .sidebar-tab:hover { background: rgba(255,255,255,0.05) !important; }
+html.dark .sidebar-tab.sidebar-active { background: rgba(240,90,34,0.15) !important; border-color: rgba(240,90,34,0.4) !important; }
+html.dark tbody tr:hover td { background-color: rgba(255,255,255,0.03) !important; }
+html.dark input[type="text"], html.dark textarea, html.dark select {
+  background-color: #0f172a !important; color: #e2e8f0 !important; border-color: #475569 !important;
+}
+html.dark input[type="text"]::placeholder, html.dark textarea::placeholder { color: #64748b !important; }
+html.dark #avatar-dropdown { background-color: #1e293b !important; border-color: #334155 !important; }
+html.dark #avatar-dropdown .h-px { background-color: #334155 !important; }
+html.dark #student-panel { background-color: #1e293b !important; border-color: #334155 !important; }
+html.dark #notes-modal .bg-white { background-color: #1e293b !important; }
+html.dark #settings-modal .bg-white { background-color: #1e293b !important; }
+html.dark #settings-modal .border-slate-100 { border-color: #334155 !important; }
+html.dark .theme-option-active { border-color: #818cf8 !important; color: #a5b4fc !important; background-color: rgba(99,102,241,0.2) !important; }

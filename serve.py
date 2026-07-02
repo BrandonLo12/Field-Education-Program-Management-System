@@ -8,7 +8,7 @@ PORT = 8000
 
 
 def open_dashboards():
-    webbrowser.open(f"http://localhost:{PORT}/index.html")
+    webbrowser.open(f"http://localhost:{PORT}/student-dashboard.html")
     webbrowser.open(f"http://localhost:{PORT}/staff-dashboard.html")
 
 
@@ -16,7 +16,7 @@ if __name__ == "__main__":
     httpd = http.server.ThreadingHTTPServer(("", PORT), http.server.SimpleHTTPRequestHandler)
     threading.Timer(0.5, open_dashboards).start()
     print(f"Serving Field Education Program dashboards at http://localhost:{PORT}")
-    print("  Student dashboard:     http://localhost:%d/index.html" % PORT)
+    print("  Student dashboard:     http://localhost:%d/student-dashboard.html" % PORT)
     print("  Coordinator dashboard: http://localhost:%d/staff-dashboard.html" % PORT)
     try:
         httpd.serve_forever()

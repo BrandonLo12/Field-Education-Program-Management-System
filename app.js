@@ -11,6 +11,8 @@ const student = {
     program: "Master of Social Work",
     year: "Second Year",
     advisor: "Prof. Michael Chen",
+    advisorEmail: "m.chen@pacific.edu",
+    advisorPhone: "(209) 555-0200",
     startSemester: "Fall 2024",
   },
 
@@ -73,17 +75,21 @@ function fmtDate(d, opts) {
 
 // ── Header ────────────────────────────────────────────────────────────────────
 function renderHeader() {
-  document.getElementById("student-name").textContent = student.name;
-  document.getElementById("student-meta").textContent =
+  const nameEl = document.getElementById("student-name");
+  if (nameEl) nameEl.textContent = student.name;
+
+  const metaEl = document.getElementById("student-meta");
+  if (metaEl) metaEl.textContent =
     `${student.cohort.program} · ${student.cohort.year} · ID: ${student.studentId}`;
 
   const initials = student.name.split(" ").map(n => n[0]).join("").slice(0, 2);
   document.getElementById("avatar").textContent = initials;
 
-  document.getElementById("nav-date").textContent =
-    today.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+  const avatarNameEl = document.getElementById("avatar-user-name");
+  if (avatarNameEl) avatarNameEl.textContent = student.name;
 
-  document.getElementById("footer-year").textContent = today.getFullYear();
+  const yearEl = document.getElementById("footer-year");
+  if (yearEl) yearEl.textContent = today.getFullYear();
 
   const cfg = {
     active:    { label: "Active Placement",    dot: "bg-emerald-400 animate-pulse", pill: "bg-emerald-50 text-emerald-700 border border-emerald-200" },
@@ -91,7 +97,8 @@ function renderHeader() {
     completed: { label: "Placement Completed", dot: "bg-slate-400",                 pill: "bg-slate-100 text-slate-600 border border-slate-200" },
   };
   const s = cfg[student.placement.status] || cfg.pending;
-  document.getElementById("status-badge").innerHTML =
+  const badgeEl = document.getElementById("status-badge");
+  if (badgeEl) badgeEl.innerHTML =
     `<span class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium ${s.pill}">
        <span class="w-2 h-2 rounded-full flex-shrink-0 ${s.dot}"></span>
        ${s.label}
@@ -102,6 +109,13 @@ function renderHeader() {
 function infoRow(label, value) {
   return `<div class="py-3">
     <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1">${label}</p>
+    <p class="text-sm text-slate-700 leading-snug whitespace-pre-line">${value}</p>
+  </div>`;
+}
+
+function compactInfoRow(label, value) {
+  return `<div class="py-1.5">
+    <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-0.5">${label}</p>
     <p class="text-sm text-slate-700 leading-snug whitespace-pre-line">${value}</p>
   </div>`;
 }
@@ -128,7 +142,9 @@ function renderCohort() {
 
 function renderAgency() {
   const pl = student.placement;
-  document.getElementById("agency-info").innerHTML = [
+  const el = document.getElementById("agency-info");
+  if (!el) return;
+  el.innerHTML = [
     infoRow("Agency",           pl.agency),
     infoRow("Agency Address",   pl.agencyAddress),
     infoRow("Field Supervisor", pl.supervisor),
@@ -188,7 +204,7 @@ function buildDayCell(d, year, month) {
   return `<div class="relative h-9 flex items-center justify-center" ${title ? `title="${title}"` : ""}>${strip}${inner}</div>`;
 }
 
-function renderCalendar() {
+function renderCalendar(containerId = "calendar-section") {
   const year  = calendarDate.getFullYear();
   const month = calendarDate.getMonth();
   const firstDow    = new Date(year, month, 1).getDay();
@@ -206,11 +222,12 @@ function renderCalendar() {
   const timelinePct = Math.min(100, Math.round((elapsedDays / totalDays) * 100));
   const daysLeft    = today > fieldEnd ? 0 : Math.max(0, durationDays(today, fieldEnd) - 1);
 
-  const container = document.getElementById("calendar-section");
+  const container = document.getElementById(containerId);
+  if (!container) return;
   container.innerHTML = `
     <!-- Month navigator -->
     <div class="flex items-center justify-between mb-4">
-      <button id="cal-prev"
+      <button id="${containerId}-prev"
         class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-400"
         aria-label="Previous month">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -218,7 +235,7 @@ function renderCalendar() {
         </svg>
       </button>
       <span class="font-semibold text-slate-800">${MONTHS[month]} ${year}</span>
-      <button id="cal-next"
+      <button id="${containerId}-next"
         class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-400"
         aria-label="Next month">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -285,13 +302,13 @@ function renderCalendar() {
     </div>
   `;
 
-  document.getElementById("cal-prev").addEventListener("click", () => {
+  document.getElementById(containerId + "-prev").addEventListener("click", () => {
     calendarDate = new Date(calendarDate.getFullYear(), calendarDate.getMonth() - 1, 1);
-    renderCalendar();
+    renderCalendar(containerId);
   });
-  document.getElementById("cal-next").addEventListener("click", () => {
+  document.getElementById(containerId + "-next").addEventListener("click", () => {
     calendarDate = new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 1);
-    renderCalendar();
+    renderCalendar(containerId);
   });
 }
 
@@ -391,7 +408,9 @@ function renderPlacementStatus() {
     completed: { label: "Completed", cls: "bg-slate-100 text-slate-600 border border-slate-200",      dot: "bg-slate-400" },
   };
   const s = cfg[pl.status] || cfg.pending;
-  document.getElementById("placement-status-info").innerHTML = [
+  const psEl = document.getElementById("placement-status-info");
+  if (!psEl) return;
+  psEl.innerHTML = [
     infoRow("Status", `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${s.cls}"><span class="w-1.5 h-1.5 rounded-full ${s.dot}"></span>${s.label}</span>`),
     infoRow("Field Supervisor", pl.supervisor),
     infoRow("Supervisor Email", `<a href="mailto:${pl.supervisorEmail}" class="text-indigo-600 hover:underline">${pl.supervisorEmail}</a>`),
@@ -403,13 +422,12 @@ function renderPlacementStatus() {
 
 // ── Tab Switching ─────────────────────────────────────────────────────────────
 const STD_TAB_META = {
-  home:     { heading: "Home",                 subheading: "Your placement overview and status." },
-  profile:  { heading: "Profile",              subheading: "Your personal information." },
-  academic: { heading: "Academic Information", subheading: "Cohort details, fieldwork calendar, and hours." },
+  home:    { heading: "Welcome, " + student.name },
+  profile: { heading: "Profile" },
 };
 
 function switchStudentTab(tab) {
-  ["home", "profile", "academic"].forEach(t => {
+  ["home", "profile"].forEach(t => {
     document.getElementById(`tab-${t}`).classList.toggle("hidden", t !== tab);
   });
 
@@ -421,29 +439,205 @@ function switchStudentTab(tab) {
     if (isActive) {
       iconWrap.classList.remove("std-icon-inactive");
       iconWrap.classList.add("std-icon-active");
-      icon.classList.remove("text-slate-500");
+      icon.classList.remove("text-slate-300");
       icon.classList.add("text-white");
     } else {
       iconWrap.classList.remove("std-icon-active");
       iconWrap.classList.add("std-icon-inactive");
       icon.classList.remove("text-white");
-      icon.classList.add("text-slate-500");
+      icon.classList.add("text-slate-300");
     }
   });
 
-  document.getElementById("page-heading").textContent    = STD_TAB_META[tab].heading;
-  document.getElementById("page-subheading").textContent = STD_TAB_META[tab].subheading;
+  document.getElementById("page-heading").textContent = STD_TAB_META[tab].heading;
+}
+
+// ── Theme Management ──────────────────────────────────────────────────────────
+const THEME_KEY = "fepms-theme";
+
+function applyTheme(mode) {
+  const isDark = mode === "dark" ||
+    (mode === "auto" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  document.documentElement.classList.toggle("dark", isDark);
+  localStorage.setItem(THEME_KEY, mode);
+  document.querySelectorAll(".theme-option").forEach(btn => {
+    btn.classList.toggle("theme-option-active", btn.dataset.theme === mode);
+  });
+}
+
+function initTheme() {
+  const saved = localStorage.getItem(THEME_KEY) || "auto";
+  applyTheme(saved);
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+    if ((localStorage.getItem(THEME_KEY) || "auto") === "auto") applyTheme("auto");
+  });
+}
+
+// ── Avatar Dropdown ───────────────────────────────────────────────────────────
+function toggleAvatarDropdown() {
+  document.getElementById("avatar-dropdown").classList.toggle("hidden");
+}
+
+function openSettings() {
+  document.getElementById("avatar-dropdown").classList.add("hidden");
+  document.getElementById("settings-modal").classList.remove("hidden");
+}
+
+function closeSettings() {
+  document.getElementById("settings-modal").classList.add("hidden");
+}
+
+function handleExit() {
+  if (confirm("Sign out of the Field Education Program?")) {
+    document.body.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:system-ui,sans-serif;background:#f8fafc;">
+        <div style="text-align:center;color:#64748b;padding:2rem">
+          <p style="font-size:1.5rem;font-weight:700;color:#1e293b;margin-bottom:0.5rem">Signed Out</p>
+          <p>You have been signed out of the Field Education Program.</p>
+        </div>
+      </div>`;
+  }
+}
+
+// ── Home Tab Renders ──────────────────────────────────────────────────────────
+function renderHomePlacementStatus() {
+  const el = document.getElementById("home-placement-status");
+  if (!el) return;
+  const pl = student.placement;
+  const cfg = {
+    active:    { label: "Active",    cls: "bg-emerald-50 text-emerald-700 border border-emerald-200", dot: "bg-emerald-400 animate-pulse" },
+    pending:   { label: "Pending",   cls: "bg-amber-50 text-amber-700 border border-amber-200",       dot: "bg-amber-400" },
+    completed: { label: "Completed", cls: "bg-slate-100 text-slate-600 border border-slate-200",      dot: "bg-slate-400" },
+  };
+  const s = cfg[pl.status] || cfg.pending;
+  el.innerHTML = [
+    compactInfoRow("Status", `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${s.cls}"><span class="w-1.5 h-1.5 rounded-full ${s.dot}"></span>${s.label}</span>`),
+    compactInfoRow("Start Date", fmtDate(pl.fieldStart)),
+    compactInfoRow("End Date",   fmtDate(pl.fieldEnd)),
+  ].join("");
+}
+
+function renderHomeLocation() {
+  const el = document.getElementById("home-location");
+  if (!el) return;
+  const pl = student.placement;
+  el.innerHTML = [
+    compactInfoRow("Agency",  pl.agency),
+    compactInfoRow("Address", pl.agencyAddress),
+  ].join("");
+}
+
+function renderHomeAcademicContact() {
+  const el = document.getElementById("home-academic-contact");
+  if (!el) return;
+  const pl = student.placement;
+  el.innerHTML = `
+    <div class="py-2 grid grid-cols-2 gap-x-4">
+      <div>
+        ${compactInfoRow("Field Liaison", student.cohort.advisor)}
+        ${compactInfoRow("Email", student.cohort.advisorEmail)}
+        ${compactInfoRow("Phone", student.cohort.advisorPhone)}
+      </div>
+      <div class="border-l border-slate-100 pl-4">
+        ${compactInfoRow("Field Supervisor", pl.supervisor)}
+        ${compactInfoRow("Email", pl.supervisorEmail)}
+        ${compactInfoRow("Phone", pl.supervisorPhone)}
+      </div>
+    </div>
+  `;
+}
+
+function renderHomeHours() {
+  const el = document.getElementById("home-hours-section");
+  if (!el) return;
+  const { required, completed } = student.hours;
+  const remaining = required - completed;
+  const pct  = Math.round((completed / required) * 100);
+  const R    = 54;
+  const circ = 2 * Math.PI * R;
+  const fill = (completed / required) * circ;
+
+  el.innerHTML = `
+    <div class="flex justify-center mb-5">
+      <div class="relative inline-flex items-center justify-center">
+        <svg width="152" height="152" viewBox="0 0 152 152" class="donut-svg">
+          <defs>
+            <linearGradient id="homeHoursGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#F05A22"/>
+              <stop offset="100%" stop-color="#FF8C55"/>
+            </linearGradient>
+          </defs>
+          <circle cx="76" cy="76" r="${R}" fill="none" stroke="#e2e8f0" stroke-width="14"/>
+          <circle cx="76" cy="76" r="${R}" fill="none"
+            stroke="url(#homeHoursGrad)" stroke-width="14"
+            stroke-linecap="round"
+            stroke-dasharray="${fill.toFixed(2)} ${(circ - fill).toFixed(2)}"
+            transform="rotate(-90 76 76)"
+            class="donut-arc"/>
+        </svg>
+        <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+          <span class="text-3xl font-bold text-slate-800 leading-none">${pct}%</span>
+          <span class="text-xs text-slate-400 mt-1">Complete</span>
+        </div>
+      </div>
+    </div>
+    <div class="grid grid-cols-2 gap-3 mb-5">
+      <div class="bg-orange-50 rounded-xl p-3 text-center">
+        <p class="text-[10px] font-semibold text-orange-400 uppercase tracking-wider mb-0.5">Completed</p>
+        <p class="text-xl font-bold text-orange-700 leading-none">${completed}<span class="text-xs font-normal ml-0.5">hrs</span></p>
+      </div>
+      <div class="bg-slate-50 rounded-xl p-3 text-center">
+        <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Remaining</p>
+        <p class="text-xl font-bold text-slate-600 leading-none">${remaining}<span class="text-xs font-normal ml-0.5">hrs</span></p>
+      </div>
+    </div>
+    <div>
+      <div class="flex justify-between text-xs text-slate-400 mb-1.5">
+        <span>Overall Progress</span>
+        <span>${completed} / ${required} hrs</span>
+      </div>
+      <div class="h-2.5 bg-slate-100 rounded-full overflow-hidden">
+        <div class="h-full rounded-full bg-gradient-to-r from-[#F05A22] to-[#FF8C55] transition-all duration-700"
+          style="width:${pct}%"></div>
+      </div>
+    </div>
+  `;
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
-renderHeader();
-renderPersonal();
-renderCohort();
-renderAgency();
-renderPlacementStatus();
-renderCalendar();
-renderHours();
-
 document.querySelectorAll(".std-tab").forEach(btn => {
   btn.addEventListener("click", () => switchStudentTab(btn.dataset.tab));
+});
+
+initTheme();
+
+renderHeader();
+document.getElementById("page-heading").textContent = STD_TAB_META.home.heading;
+renderPersonal();
+renderHomePlacementStatus();
+renderHomeLocation();
+renderHomeAcademicContact();
+renderCalendar("home-calendar-section");
+renderHomeHours();
+
+document.addEventListener("click", e => {
+  const avatarWrap = document.getElementById("avatar-menu-wrap");
+  const avatarDd   = document.getElementById("avatar-dropdown");
+  if (avatarWrap && !avatarWrap.contains(e.target)) avatarDd.classList.add("hidden");
+
+  const notifWrap = document.getElementById("notif-wrap");
+  const notifDd   = document.getElementById("notif-dropdown");
+  if (notifWrap && !notifWrap.contains(e.target)) notifDd.classList.add("hidden");
+});
+
+function toggleNotifications() {
+  document.getElementById("notif-dropdown").classList.toggle("hidden");
+  document.getElementById("avatar-dropdown").classList.add("hidden");
+}
+
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") {
+    document.getElementById("avatar-dropdown").classList.add("hidden");
+    closeSettings();
+  }
 });
