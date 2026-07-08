@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MSW Field Application — Field Education Program</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ["Inter", "system-ui", "sans-serif"] }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style type="text/tailwindcss">
+    .field-label { @apply text-sm font-semibold text-slate-700 mb-1.5 block; }
+    .field-input { @apply w-full text-sm border border-slate-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#F05A22] focus:border-transparent bg-white; }
+    .field-hint { @apply text-xs text-slate-400 mt-1; }
+    .radio-row { @apply flex items-center gap-2 py-1 cursor-pointer text-sm text-slate-700; }
+    .section-card { @apply bg-white rounded-2xl shadow-sm border border-slate-100 p-6 sm:p-8 space-y-6; }
+    .part-heading { @apply text-xl font-bold text-slate-800; }
+    .part-sub { @apply text-sm text-slate-500 leading-relaxed; }
+    .policy-block { @apply border border-slate-100 rounded-xl p-4 space-y-2; }
+    .policy-title { @apply text-xs font-bold text-slate-700 uppercase tracking-wide; }
+    .policy-text { @apply text-xs text-slate-500 leading-relaxed whitespace-pre-line; }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans antialiased">
+
+  <!-- Header -->
+  <header class="bg-[#475569] py-6 px-6 sm:px-10">
+    <div class="max-w-3xl mx-auto">
+      <p class="text-xs font-semibold text-orange-300 uppercase tracking-widest mb-1">Field Education Program</p>
+      <h1 class="text-2xl font-bold text-white">MSW Field Application</h1>
+      <p class="text-sm text-slate-300 mt-1">University of the Pacific — School of Social Work</p>
+    </div>
+  </header>
+
+  <main class="max-w-3xl mx-auto px-4 sm:px-6 py-8">
+
+    <!-- Intro / submitted view swap -->
+    <div id="form-view" class="space-y-6">
+
+      <div class="section-card">
+        <p class="text-sm text-slate-600 leading-relaxed">
+          Please complete all sections below. Your responses will be submitted to the Field Education Office for
+          review. Fields marked <span class="text-[#F05A22] font-semibold">*</span> are required.
+        </p>
+      </div>
+
+      <form id="application-form" class="space-y-6">
+
+        <!-- PART I -->
+        <div class="section-card">
+          <p class="part-heading">Part I: Student Demographics</p>
+
+          <div>
+            <label class="field-label">Your Full Name (Last, First, Middle) <span class="text-[#F05A22]">*</span></label>
+            <input required id="q-fullName" type="text" class="field-input" placeholder="Smith, Jane, Marie" />
+          </div>
+          <div>
+            <label class="field-label">Your Pacific Student ID (if known)</label>
+            <input id="q-studentId" type="text" class="field-input" />
+          </div>
+          <div>
+            <label class="field-label">If you have a preferred name, please write it below.</label>
+            <input id="q-preferredName" type="text" class="field-input" />
+          </div>
+          <div>
+            <label class="field-label">What are your Preferred Pronouns</label>
+            <input id="q-pronouns" type="text" class="field-input" />
+          </div>
+          <div>
+            <label class="field-label">Your Student (Pacific) email address: <span class="text-[#F05A22]">*</span></label>
+            <input required id="q-email" type="email" class="field-input" placeholder="j_smith@u.pacific.edu" />
+          </div>
+          <div>
+            <label class="field-label">Phone Number <span class="text-[#F05A22]">*</span></label>
+            <input required id="q-phone" type="tel" class="field-input" />
+          </div>
+          <div>
+            <label class="field-label">Current Address (Street Number & Street)</label>
+            <input id="q-address" type="text" class="field-input" />
+          </div>
+          <div>
+            <label class="field-label">City, County & Zipcode of Residence</label>
+            <input id="q-cityCountyZip" type="text" class="field-input" />
+          </div>
+          <div>
+            <label class="field-label">City & County of Residence when attending Field Internship</label>
+            <input id="q-fieldCityCounty" type="text" class="field-input" />
+          </div>
+          <div>
+            <label class="field-label">Languages Spoken (other than English) with Note if Fluent or Proficient</label>
+            <textarea id="q-languages" rows="2" class="field-input resize-none"></textarea>
+          </div>
+          <div>
+            <label class="field-label">Program Track <span class="text-[#F05A22]">*</span></label>
+            <label class="radio-row"><input required type="radio" name="programTrack" value="Online" class="accent-[#F05A22]"> Online</label>
+            <label class="radio-row"><input required type="radio" name="programTrack" value="Hybrid" class="accent-[#F05A22]"> Hybrid</label>
+          </div>
+          <div>
+            <label class="field-label">Concentration <span class="text-[#F05A22]">*</span></label>
+            <label class="radio-row"><input required type="radio" name="concentration" value="Behavioral Health" class="accent-[#F05A22]"> Behavioral Health</label>
+            <label class="radio-row"><input required type="radio" name="concentration" value="Healthcare" class="accent-[#F05A22]"> Healthcare</label>
+          </div>
+        </div>
+
+        <!-- PART II -->
+        <div class="section-card">
+          <p class="part-heading">Part II: Student Accommodation Information</p>
+          <p class="part-sub">
+            The University of the Pacific is committed to providing an accessible learning environment in which all
+            course and field education experiences are usable by every student and faculty member. If you believe you
+            require disability-related academic adjustments for your field internship (including pregnancy-related
+            disabilities), you must contact Services for Students with Disabilities (SSD) as soon as possible to
+            discuss eligibility. An up-to-date accommodation letter from SSD is required before any adjustments—beyond
+            what is available to all students—can be implemented. Please note that disability-related academic
+            adjustments are not retroactive. Students who intend to request accommodations for field internship must
+            also notify the MSW Field Director, Dr. Halide Porras, immediately.
+          </p>
+          <div>
+            <label class="field-label">I wish to request reasonable accommodation for my field internship. <span class="text-[#F05A22]">*</span></label>
+            <label class="radio-row"><input required type="radio" name="wantsAccommodation" value="Yes" class="accent-[#F05A22]"> Yes</label>
+            <label class="radio-row"><input required type="radio" name="wantsAccommodation" value="No" class="accent-[#F05A22]"> No</label>
+          </div>
+        </div>
+
+        <!-- PART III -->
+        <div class="section-card">
+          <p class="part-heading">Part III: Undergraduate Education</p>
+          <div>
+            <label class="field-label">What was your undergraduate major?</label>
+            <input id="q-ugMajor" type="text" class="field-input" />
+          </div>
+          <div>
+            <label class="field-label">Where did you obtain your degree (university or college)?</label>
+            <input id="q-ugInstitution" type="text" class="field-input" />
+          </div>
+          <div>
+            <label class="field-label">Select your degree type:</label>
+            <label class="radio-row"><input type="radio" name="ugDegreeType" value="Bachelor of Arts (BA)" class="accent-[#F05A22]"> Bachelor of Arts (BA)</label>
+            <label class="radio-row"><input type="radio" name="ugDegreeType" value="Bachelor of Science (BS)" class="accent-[#F05A22]"> Bachelor of Science (BS)</label>
+            <label class="radio-row"><input type="radio" name="ugDegreeType" value="Bachelor of Arts in Social Work (BASW) or Bachelor of Social Work (BSW)" class="accent-[#F05A22]"> Bachelor of Arts in Social Work (BASW) or Bachelor of Social Work (BSW)</label>
+          </div>
+          <div>
+            <label class="field-label">If you also have an undergraduate minor, what was your minor(s)?</label>
+            <input id="q-ugMinor" type="text" class="field-input" />
+          </div>
+          <div>
+            <label class="field-label">Please write down any additional degrees and/or certifications.</label>
+            <textarea id="q-additionalDegrees" rows="2" class="field-input resize-none"></textarea>
+          </div>
+        </div>
+
+        <!-- PART IV -->
+        <div class="section-card">
+          <p class="part-heading">Part IV: Paid or Unpaid Experiences</p>
+
+          <div>
+            <label class="field-label">Please list your social work or human services experience below:</label>
+            <div id="sw-experience-rows" class="space-y-3"></div>
+            <button type="button" id="add-sw-row" class="mt-2 text-xs font-medium text-[#F05A22] hover:underline">+ Add another experience</button>
+          </div>
+
+          <div>
+            <label class="field-label">Please list your experiences that are not in social work or human service field:</label>
+            <div id="other-experience-rows" class="space-y-3"></div>
+            <button type="button" id="add-other-row" class="mt-2 text-xs font-medium text-[#F05A22] hover:underline">+ Add another experience</button>
+          </div>
+
+          <div>
+            <label class="field-label">Please upload your resume</label>
+            <input id="q-resume" type="file" class="field-input" />
+            <p class="field-hint">The file name will be recorded with your application; attach the actual file separately when instructed by the Field Office.</p>
+          </div>
+        </div>
+
+        <!-- PART V -->
+        <div class="section-card">
+          <p class="part-heading">Part V: Employment-Related Internships</p>
+          <p class="part-sub">
+            An Employment-Based Field Internship allows an MSW student to complete field education requirements at
+            their place of employment when the agency can provide a learning experience that is distinct from the
+            student's regular job duties. Approval of an Employment-Based Field Internship is not guaranteed.
+          </p>
+          <div>
+            <label class="field-label">Do you wish to apply to use your place of employment as a field placement?</label>
+            <label class="radio-row"><input type="radio" name="employmentBasedInterest" value="Yes" class="accent-[#F05A22]"> Yes</label>
+            <label class="radio-row"><input type="radio" name="employmentBasedInterest" value="No" class="accent-[#F05A22]"> No</label>
+            <label class="radio-row"><input type="radio" name="employmentBasedInterest" value="Maybe" class="accent-[#F05A22]"> Maybe</label>
+          </div>
+        </div>
+
+        <!-- PART VI -->
+        <div class="section-card">
+          <p class="part-heading">Part VI: Field Placement Interests</p>
+          <p class="part-sub">
+            Below are 12 social work "service areas." Rank your choices for a field internship (1 = most preferred).
+            Placement requests cannot be guaranteed.
+          </p>
+          <div id="service-area-ranks" class="space-y-2"></div>
+          <div>
+            <label class="field-label">Other (please specify)</label>
+            <input id="q-otherServiceArea" type="text" class="field-input" />
+          </div>
+          <div>
+            <label class="field-label">Please specify any preferred populations and any other interests not listed.</label>
+            <textarea id="q-preferredPopulations" rows="2" class="field-input resize-none"></textarea>
+          </div>
+          <div>
+            <label class="field-label">If you know the name of a specific organization you are interested in, please list the organization's name, address, and contact person if known.</label>
+            <textarea id="q-specificOrg" rows="2" class="field-input resize-none"></textarea>
+          </div>
+        </div>
+
+        <!-- PART VII -->
+        <div class="section-card">
+          <p class="part-heading">Part VII: Transportation</p>
+          <p class="part-sub">Students are responsible for having reliable transportation to and from their field placement.</p>
+          <div id="transportation-checks" class="space-y-1"></div>
+          <div>
+            <label class="field-label">If you have three or more moving violations, please explain:</label>
+            <textarea id="q-movingViolations" rows="2" class="field-input resize-none"></textarea>
+          </div>
+        </div>
+
+        <!-- PART VIII -->
+        <div class="section-card">
+          <p class="part-heading">Part VIII: Student Self-Assessment</p>
+          <div>
+            <label class="field-label">PRIDE: Describe something you are proud of about yourself. Be as descriptive as possible.</label>
+            <textarea id="q-pride" rows="3" class="field-input resize-none"></textarea>
+          </div>
+          <div>
+            <label class="field-label">AFTER GRADUATION: What type of job do you envision having after graduation?</label>
+            <textarea id="q-afterGraduation" rows="3" class="field-input resize-none"></textarea>
+          </div>
+          <div>
+            <label class="field-label">AREAS NEEDING IMPROVEMENT: Select competencies you wish to improve. For each you select, briefly describe what you need to do to strengthen your skills.</label>
+            <div id="competency-list" class="space-y-3"></div>
+          </div>
+          <div>
+            <label class="field-label">CLIENT POPULATIONS OR SITUATIONS: Identify any client populations, problems, topics, or situations which might cause you significant difficulty in maintaining your professional objectivity.</label>
+            <textarea id="q-difficultPopulations" rows="3" class="field-input resize-none"></textarea>
+          </div>
+        </div>
+
+        <!-- PART IX -->
+        <div class="section-card">
+          <p class="part-heading">Part IX: Acknowledgment of Field Guidelines</p>
+          <p class="part-sub">Please review each statement and check the box to confirm you understand and accept it.</p>
+          <div id="acknowledgment-list" class="space-y-4"></div>
+        </div>
+
+        <!-- PART X -->
+        <div class="section-card">
+          <p class="part-heading">Part X: Final Acknowledgement</p>
+          <p class="part-sub">
+            I have reviewed and understand all of the above statements and preceding information. I agree to comply
+            with all program policies, the Field Manual, and the NASW Code of Ethics. By signing below, I certify that
+            all information provided in this field application packet is true and correct to the best of my knowledge.
+          </p>
+          <div>
+            <label class="field-label">Type your full name to sign <span class="text-[#F05A22]">*</span></label>
+            <input required id="q-signatureName" type="text" class="field-input" placeholder="Jane M. Smith" />
+          </div>
+        </div>
+
+        <div class="flex justify-end pb-8">
+          <button type="submit" class="px-6 py-3 text-sm font-semibold text-white bg-[#F05A22] hover:bg-[#C44A1C] rounded-xl shadow-sm transition-colors">
+            Submit Application
+          </button>
+        </div>
+
+      </form>
+    </div>
+
+    <!-- Success / copy view -->
+    <div id="success-view" class="hidden space-y-6">
+      <div class="section-card text-center">
+        <div class="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center mx-auto mb-3">
+          <svg class="w-7 h-7 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+          </svg>
+        </div>
+        <p class="text-lg font-bold text-slate-800">Application Submitted</p>
+        <p class="text-sm text-slate-500 mt-1">Your application has been saved for the Field Education Office to review.</p>
+      </div>
+
+      <div class="section-card">
+        <div class="flex items-center justify-between">
+          <p class="text-sm font-semibold text-slate-700">Copy your submission</p>
+          <button id="copy-submission-btn" class="px-4 py-2 text-sm font-medium text-white bg-[#F05A22] hover:bg-[#C44A1C] rounded-lg shadow-sm transition-colors">
+            Copy as Text
+          </button>
+        </div>
+        <p class="text-xs text-slate-400">
+          Until the application is fully wired into the system's database, use this button to copy your full
+          submission as plain text so it can be pasted into an email or document for transfer.
+        </p>
+        <pre id="submission-preview" class="text-xs text-slate-600 bg-slate-50 border border-slate-100 rounded-xl p-4 overflow-x-auto whitespace-pre-wrap"></pre>
+      </div>
+
+      <div class="flex justify-center pb-8">
+        <button id="new-application-btn" class="text-sm font-medium text-[#F05A22] hover:underline">Submit another application</button>
+      </div>
+    </div>
+
+  </main>
+
+  <script src="field-application-form.js"></script>
+</body>
+</html>

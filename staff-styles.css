@@ -40,6 +40,18 @@
   white-space: nowrap;
 }
 
+/* Checklist table headers — bigger/bolder/darker than the standard .th-cell */
+.checklist-th {
+  padding: 0.75rem 1.25rem;
+  text-align: left;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0f172a;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
 /* Sidebar nav tabs */
 .sidebar-tab {
   display: flex;
@@ -175,6 +187,23 @@ html.dark .agency-city-tab.agency-city-active { background-color: rgba(240,90,34
   font-weight: 600;
 }
 
+/* ── Text Size Toggle Buttons ── */
+.text-size-option {
+  color: #64748b;
+  border-color: #e2e8f0;
+  background: transparent;
+}
+.text-size-option:hover {
+  border-color: #cbd5e1;
+  color: #475569;
+}
+.text-size-option-active {
+  border-color: #6366f1 !important;
+  color: #4338ca !important;
+  background-color: #eef2ff !important;
+  font-weight: 600;
+}
+
 /* ── Dark Mode ── */
 html.dark body { background-color: #0f172a; }
 html.dark #header-left { background-color: #334155 !important; }
@@ -208,3 +237,4 @@ html.dark #notes-modal .bg-white { background-color: #1e293b !important; }
 html.dark #settings-modal .bg-white { background-color: #1e293b !important; }
 html.dark #settings-modal .border-slate-100 { border-color: #334155 !important; }
 html.dark .theme-option-active { border-color: #818cf8 !important; color: #a5b4fc !important; background-color: rgba(99,102,241,0.2) !important; }
+html.dark .text-size-option-active { border-color: #818cf8 !important; color: #a5b4fc !important; background-color: rgba(99,102,241,0.2) !important; }

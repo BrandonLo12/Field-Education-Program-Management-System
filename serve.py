@@ -10,6 +10,7 @@ PORT = 8000
 def open_dashboards():
     webbrowser.open(f"http://localhost:{PORT}/student-dashboard.html")
     webbrowser.open(f"http://localhost:{PORT}/staff-dashboard.html")
+    webbrowser.open(f"http://localhost:{PORT}/admin-dashboard.html")
 
 
 if __name__ == "__main__":
@@ -18,6 +19,7 @@ if __name__ == "__main__":
     print(f"Serving Field Education Program dashboards at http://localhost:{PORT}")
     print("  Student dashboard:     http://localhost:%d/student-dashboard.html" % PORT)
     print("  Coordinator dashboard: http://localhost:%d/staff-dashboard.html" % PORT)
+    print("  Admin dashboard:       http://localhost:%d/admin-dashboard.html" % PORT)
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:

@@ -393,7 +393,7 @@ function renderHours() {
 
     <!-- Breakdown -->
     <div class="pt-4 border-t border-slate-100">
-      <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-4">Hours Breakdown</p>
+      <p class="text-[10px] font-bold text-slate-900 uppercase tracking-widest mb-4">Hours Breakdown</p>
       <div class="space-y-3.5">${breakdownRows}</div>
     </div>
   `;
@@ -424,11 +424,10 @@ function renderPlacementStatus() {
 const STD_TAB_META = {
   home:    { heading: "Welcome, " + student.name },
   profile: { heading: "Profile" },
-  timesheet: { heading: "Timesheet" },
 };
 
 function switchStudentTab(tab) {
-  ["home", "profile", "timesheet"].forEach(t => {
+  ["home", "profile"].forEach(t => {
     document.getElementById(`tab-${t}`).classList.toggle("hidden", t !== tab);
   });
 
@@ -472,6 +471,22 @@ function initTheme() {
   window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
     if ((localStorage.getItem(THEME_KEY) || "auto") === "auto") applyTheme("auto");
   });
+}
+
+// ── Text Size Management ───────────────────────────────────────────────────
+const TEXT_SIZE_KEY = "fepms-text-size";
+const TEXT_SIZE_SCALE = { small: "87.5%", medium: "100%", large: "112.5%" };
+
+function applyTextSize(size) {
+  document.documentElement.style.fontSize = TEXT_SIZE_SCALE[size] || TEXT_SIZE_SCALE.medium;
+  localStorage.setItem(TEXT_SIZE_KEY, size);
+  document.querySelectorAll(".text-size-option").forEach(btn => {
+    btn.classList.toggle("text-size-option-active", btn.dataset.textSize === size);
+  });
+}
+
+function initTextSize() {
+  applyTextSize(localStorage.getItem(TEXT_SIZE_KEY) || "medium");
 }
 
 // ── Avatar Dropdown ───────────────────────────────────────────────────────────
@@ -548,69 +563,13 @@ function renderHomeAcademicContact() {
   `;
 }
 
-function renderHomeHours() {
-  const el = document.getElementById("home-hours-section");
-  if (!el) return;
-  const { required, completed } = student.hours;
-  const remaining = required - completed;
-  const pct  = Math.round((completed / required) * 100);
-  const R    = 54;
-  const circ = 2 * Math.PI * R;
-  const fill = (completed / required) * circ;
-
-  el.innerHTML = `
-    <div class="flex justify-center mb-5">
-      <div class="relative inline-flex items-center justify-center">
-        <svg width="152" height="152" viewBox="0 0 152 152" class="donut-svg">
-          <defs>
-            <linearGradient id="homeHoursGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="#F05A22"/>
-              <stop offset="100%" stop-color="#FF8C55"/>
-            </linearGradient>
-          </defs>
-          <circle cx="76" cy="76" r="${R}" fill="none" stroke="#e2e8f0" stroke-width="14"/>
-          <circle cx="76" cy="76" r="${R}" fill="none"
-            stroke="url(#homeHoursGrad)" stroke-width="14"
-            stroke-linecap="round"
-            stroke-dasharray="${fill.toFixed(2)} ${(circ - fill).toFixed(2)}"
-            transform="rotate(-90 76 76)"
-            class="donut-arc"/>
-        </svg>
-        <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-          <span class="text-3xl font-bold text-slate-800 leading-none">${pct}%</span>
-          <span class="text-xs text-slate-400 mt-1">Complete</span>
-        </div>
-      </div>
-    </div>
-    <div class="grid grid-cols-2 gap-3 mb-5">
-      <div class="bg-orange-50 rounded-xl p-3 text-center">
-        <p class="text-[10px] font-semibold text-orange-400 uppercase tracking-wider mb-0.5">Completed</p>
-        <p class="text-xl font-bold text-orange-700 leading-none">${completed}<span class="text-xs font-normal ml-0.5">hrs</span></p>
-      </div>
-      <div class="bg-slate-50 rounded-xl p-3 text-center">
-        <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Remaining</p>
-        <p class="text-xl font-bold text-slate-600 leading-none">${remaining}<span class="text-xs font-normal ml-0.5">hrs</span></p>
-      </div>
-    </div>
-    <div>
-      <div class="flex justify-between text-xs text-slate-400 mb-1.5">
-        <span>Overall Progress</span>
-        <span>${completed} / ${required} hrs</span>
-      </div>
-      <div class="h-2.5 bg-slate-100 rounded-full overflow-hidden">
-        <div class="h-full rounded-full bg-gradient-to-r from-[#F05A22] to-[#FF8C55] transition-all duration-700"
-          style="width:${pct}%"></div>
-      </div>
-    </div>
-  `;
-}
-
 // ── Init ──────────────────────────────────────────────────────────────────────
 document.querySelectorAll(".std-tab").forEach(btn => {
   btn.addEventListener("click", () => switchStudentTab(btn.dataset.tab));
 });
 
 initTheme();
+initTextSize();
 
 renderHeader();
 document.getElementById("page-heading").textContent = STD_TAB_META.home.heading;
@@ -619,7 +578,6 @@ renderHomePlacementStatus();
 renderHomeLocation();
 renderHomeAcademicContact();
 renderCalendar("home-calendar-section");
-renderHomeHours();
 
 document.addEventListener("click", e => {
   const avatarWrap = document.getElementById("avatar-menu-wrap");
