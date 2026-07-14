@@ -232,10 +232,6 @@
             </div>
             <select id="filter-cohort" class="filter-select">
               <option value="">All Cohorts</option>
-              <option value="Spring 2023">Spring 2023</option>
-              <option value="Spring 2024">Spring 2024</option>
-              <option value="Fall 2024">Fall 2024</option>
-              <option value="Fall 2025">Fall 2025</option>
             </select>
             <select id="filter-concentration" class="filter-select">
               <option value="">All Concentrations</option>
@@ -308,6 +304,7 @@
                   <th class="checklist-th">Item</th>
                   <th class="checklist-th">Description</th>
                   <th class="checklist-th">Task Assigned To</th>
+                  <th class="checklist-th">Assigned From</th>
                   <th class="checklist-th">Deadline</th>
                   <th class="checklist-th">Remarks</th>
                   <th class="checklist-th text-center">Status</th>
@@ -322,47 +319,39 @@
       </div>
 
       <!-- ── Agencies Tab ──────────────────────────────────────────────── -->
-      <div id="tab-agencies" class="hidden">
-        <div class="flex gap-5 items-start">
+      <div id="tab-agencies" class="hidden space-y-4">
 
-          <!-- City sidebar -->
-          <div class="w-52 flex-shrink-0 bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-            <div class="bg-[#F05A22] px-4 py-3 text-center">
-              <p class="text-xs font-bold text-white uppercase tracking-widest">Cities</p>
+        <!-- Search + contract/city/county filters -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
+          <div class="flex flex-wrap items-center gap-3">
+            <div class="relative flex-1 min-w-[180px]">
+              <svg class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z"/>
+              </svg>
+              <input id="agency-search" type="text" placeholder="Search by agency name…"
+                class="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent" />
             </div>
-            <div id="agency-city-tabs" class="flex flex-col divide-y divide-slate-100"></div>
+            <select id="filter-contract" class="filter-select">
+              <option value="">All Contract Statuses</option>
+              <option value="Active">Active</option>
+              <option value="Expired">Expired</option>
+              <option value="Pending">Pending</option>
+            </select>
+            <select id="filter-city" class="filter-select">
+              <option value="">All Cities</option>
+            </select>
+            <select id="filter-county" class="filter-select">
+              <option value="">All Counties</option>
+            </select>
+            <button id="clear-agency-filters" class="text-xs font-medium text-teal-600 hover:text-teal-700 px-2 py-2 whitespace-nowrap">
+              Clear filters
+            </button>
           </div>
-
-          <!-- Right panel -->
-          <div class="flex-1 min-w-0 space-y-4">
-            <!-- Search + contract filter -->
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
-              <div class="flex flex-wrap items-center gap-3">
-                <div class="relative flex-1 min-w-[180px]">
-                  <svg class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z"/>
-                  </svg>
-                  <input id="agency-search" type="text" placeholder="Search by agency name…"
-                    class="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent" />
-                </div>
-                <select id="filter-contract" class="filter-select">
-                  <option value="">All Contract Statuses</option>
-                  <option value="Active">Active</option>
-                  <option value="Expired">Expired</option>
-                  <option value="Pending">Pending</option>
-                </select>
-                <button id="clear-agency-filters" class="text-xs font-medium text-teal-600 hover:text-teal-700 px-2 py-2 whitespace-nowrap">
-                  Clear filters
-                </button>
-              </div>
-            </div>
-
-            <div class="grid grid-cols-1 xl:grid-cols-2 gap-5" id="agency-cards"></div>
-            <p id="agency-empty" class="hidden text-center text-slate-400 text-sm py-10">No agencies match the selected filters.</p>
-            <p class="text-xs text-slate-400 text-center" id="agency-count"></p>
-          </div>
-
         </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5" id="agency-cards"></div>
+        <p id="agency-empty" class="hidden text-center text-slate-400 text-sm py-10">No agencies match the selected filters.</p>
+        <p class="text-xs text-slate-400 text-center" id="agency-count"></p>
       </div>
 
       <!-- ── Profile Tab ─────────────────────────────────────────────────── -->
@@ -407,22 +396,20 @@
         <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 sm:p-5 space-y-3">
           <div class="flex items-center justify-between gap-4 flex-wrap">
             <div>
-              <p class="text-sm font-bold text-slate-900">MSW Field Applications</p>
-              <p class="text-xs text-slate-400 mt-0.5">Submissions from <code class="bg-slate-50 px-1 py-0.5 rounded">field-application-form.html</code>, shared with students to fill out.</p>
+              <p class="text-lg font-bold text-slate-900">MSW Field Applications</p>
+              <p class="text-xs text-slate-400 mt-0.5">Submissions from the student field application form.</p>
             </div>
             <p id="forms-count" class="text-xs text-slate-400"></p>
           </div>
-          <div class="flex items-center gap-2 bg-slate-50 border border-slate-100 rounded-xl p-2">
-            <input id="form-link-input" type="text" readonly
-              class="flex-1 min-w-0 text-xs sm:text-sm text-slate-600 bg-transparent px-2 py-1.5 focus:outline-none" />
+          <div class="flex items-center justify-end gap-2">
             <a id="open-form-link" href="field-application-form.html" target="_blank" rel="noopener"
-              class="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-teal-700 bg-white hover:bg-teal-50 border border-teal-200 rounded-lg transition-colors whitespace-nowrap flex-shrink-0">
+              class="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-teal-700 bg-white hover:bg-teal-50 border border-teal-200 rounded-lg transition-colors whitespace-nowrap">
               <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
               </svg>
               View Form
             </a>
-            <button id="copy-form-link-btn" class="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-white bg-teal-600 hover:bg-teal-700 rounded-lg shadow-sm transition-colors whitespace-nowrap flex-shrink-0">
+            <button id="copy-form-link-btn" class="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-white bg-teal-600 hover:bg-teal-700 rounded-lg shadow-sm transition-colors whitespace-nowrap">
               <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
               </svg>
@@ -439,14 +426,29 @@
         <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 sm:p-5 space-y-3">
           <div class="flex items-center justify-between gap-4 flex-wrap">
             <div>
-              <p class="text-sm font-bold text-slate-900">Agency Forms</p>
-              <p class="text-xs text-slate-400 mt-0.5">Submissions from agencies will appear here.</p>
+              <p class="text-lg font-bold text-slate-900">Agency Interview Responses</p>
+              <p class="text-xs text-slate-400 mt-0.5">Submissions from agencies after interviewing a student for placement.</p>
             </div>
             <p id="agency-forms-count" class="text-xs text-slate-400"></p>
           </div>
-          <div id="agency-forms-list" class="space-y-4"></div>
-          <p id="agency-forms-empty" class="text-center text-slate-400 text-sm py-10">No agency forms submitted yet.</p>
+          <div class="flex items-center justify-end gap-2">
+            <a id="open-agency-form-link" href="agency-interview-form.html" target="_blank" rel="noopener"
+              class="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-teal-700 bg-white hover:bg-teal-50 border border-teal-200 rounded-lg transition-colors whitespace-nowrap">
+              <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+              </svg>
+              View Form
+            </a>
+            <button id="copy-agency-form-link-btn" class="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-white bg-teal-600 hover:bg-teal-700 rounded-lg shadow-sm transition-colors whitespace-nowrap">
+              <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+              </svg>
+              Copy Link
+            </button>
+          </div>
         </div>
+        <div id="agency-forms-list" class="space-y-4"></div>
+        <p id="agency-forms-empty" class="hidden text-center text-slate-400 text-sm py-10">No agency forms submitted yet.</p>
       </div>
 
     </main>
@@ -493,6 +495,24 @@
     </div>
   </div>
 
+  <!-- Agency Profile Panel -->
+  <div id="agency-panel-backdrop" class="fixed inset-0 z-40 bg-slate-900/30 hidden" onclick="closeAgencyPanel()"></div>
+  <div id="agency-panel" class="fixed top-16 right-0 bottom-0 w-full sm:w-[480px] z-50 bg-white shadow-2xl border-l border-slate-100 flex flex-col hidden" style="transition: transform 0.3s ease;" >
+
+    <!-- Panel Header -->
+    <div class="px-6 pt-6 pb-4 border-b border-slate-100 flex items-center justify-between flex-shrink-0">
+      <p class="text-xs font-semibold text-teal-600 uppercase tracking-wider">Agency Profile</p>
+      <button onclick="closeAgencyPanel()" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 transition-colors" aria-label="Close">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Single-column body: header, tab bar, and the active tab's content (filled by JS) -->
+    <div id="agency-panel-body" class="flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-5"></div>
+  </div>
+
   <!-- Notes Modal -->
   <div id="notes-modal" class="fixed inset-0 z-50 hidden">
     <div id="notes-backdrop" class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"></div>
@@ -525,6 +545,42 @@
             <button id="modal-cancel" class="px-4 py-2 text-sm font-medium text-slate-500 hover:bg-slate-50 rounded-lg">Cancel</button>
             <button id="modal-save" class="px-4 py-2 text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 rounded-lg shadow-sm">Save Notes</button>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Location Detail Modal (staff + admin can both edit the placement schedule) -->
+  <div id="location-detail-modal" class="fixed inset-0 z-[80] hidden">
+    <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" data-close-modal="location-detail-modal"></div>
+    <div class="absolute inset-0 flex items-center justify-center p-4 overflow-y-auto">
+      <div class="bg-white rounded-2xl shadow-xl w-full max-w-xl my-8" role="dialog" aria-modal="true">
+        <div class="px-8 pt-8 pb-5 border-b border-slate-100 flex items-center justify-between">
+          <h3 class="text-2xl font-bold text-slate-800">Location Details</h3>
+          <button data-close-modal="location-detail-modal" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div class="px-8 py-6 space-y-6">
+          <div id="location-detail-address" class="text-lg"></div>
+          <div>
+            <p class="text-base font-semibold text-slate-500 mb-3">Placement Schedule</p>
+            <div id="location-detail-placements-list" class="space-y-2.5 max-h-[40vh] overflow-y-auto"></div>
+          </div>
+          <form id="location-detail-add-form" class="flex items-end gap-3 pt-4 border-t border-slate-100">
+            <div class="flex-1 min-w-0">
+              <label class="text-sm font-semibold text-slate-500 mb-1.5 block">Semester</label>
+              <select id="location-detail-semester" class="w-full text-base border border-slate-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-teal-400"></select>
+            </div>
+            <div class="w-24 flex-shrink-0">
+              <label class="text-sm font-semibold text-slate-500 mb-1.5 block">Count</label>
+              <input type="number" min="0" id="location-detail-count" value="1" class="w-full text-base border border-slate-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-teal-400" />
+            </div>
+            <button type="submit" class="px-5 py-3 text-base font-medium text-white bg-teal-600 hover:bg-teal-700 rounded-lg shadow-sm whitespace-nowrap">Add</button>
+          </form>
+        </div>
+        <div class="px-8 pb-8 pt-5 border-t border-slate-100 flex items-center justify-end">
+          <button type="button" data-close-modal="location-detail-modal" class="px-5 py-3 text-base font-medium text-slate-500 hover:bg-slate-50 rounded-lg">Done</button>
         </div>
       </div>
     </div>
@@ -634,6 +690,7 @@
                   <th class="checklist-th">Item</th>
                   <th class="checklist-th">Description</th>
                   <th class="checklist-th">Task Assigned To</th>
+                  <th class="checklist-th">Assigned From</th>
                   <th class="checklist-th">Deadline</th>
                   <th class="checklist-th">Remarks</th>
                   <th class="checklist-th text-center">Status</th>
@@ -689,23 +746,27 @@
                 <select id="ct-assigned" class="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-400 cursor-pointer"></select>
               </div>
               <div>
-                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Deadline</label>
-                <input type="date" id="ct-deadline"
-                  class="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-400 cursor-pointer" />
+                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Assigned From</label>
+                <select id="ct-assigned-from" class="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-400 cursor-pointer"></select>
               </div>
             </div>
             <div class="grid grid-cols-2 gap-3">
               <div>
+                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Deadline</label>
+                <input type="date" id="ct-deadline"
+                  class="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-400 cursor-pointer" />
+              </div>
+              <div>
                 <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Remarks</label>
                 <select id="ct-remarks" class="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-400 cursor-pointer"></select>
               </div>
-              <div>
-                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Status</label>
-                <label class="flex items-center gap-2 h-[38px] cursor-pointer">
-                  <input type="checkbox" id="ct-done" class="w-4 h-4 rounded accent-teal-600 cursor-pointer" />
-                  <span class="text-sm text-slate-700">Mark as complete</span>
-                </label>
-              </div>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Status</label>
+              <label class="flex items-center gap-2 h-[38px] cursor-pointer">
+                <input type="checkbox" id="ct-done" class="w-4 h-4 rounded accent-teal-600 cursor-pointer" />
+                <span class="text-sm text-slate-700">Mark as complete</span>
+              </label>
             </div>
           </div>
           <div class="px-6 pb-6 pt-4 border-t border-slate-100 flex items-center justify-end gap-2">

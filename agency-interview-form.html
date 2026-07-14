@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agency Interview Response Form — Field Education Program</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ["Inter", "system-ui", "sans-serif"] }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style type="text/tailwindcss">
+    .field-label { @apply text-sm font-semibold text-slate-700 mb-1.5 block; }
+    .field-input { @apply w-full text-sm border border-slate-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#F05A22] focus:border-transparent bg-white; }
+    .radio-row { @apply flex items-center gap-2 py-1 cursor-pointer text-sm text-slate-700; }
+    .section-card { @apply bg-white rounded-2xl shadow-sm border border-slate-100 p-6 sm:p-8 space-y-5; }
+    .part-heading { @apply text-xl font-bold text-slate-800; }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans antialiased">
+
+  <!-- Header -->
+  <header class="bg-[#475569] py-6 px-6 sm:px-10">
+    <div class="max-w-3xl mx-auto">
+      <p class="text-xs font-semibold text-orange-300 uppercase tracking-widest mb-1">Field Education Program</p>
+      <h1 class="text-2xl font-bold text-white">Agency Interview Response Form</h1>
+      <p class="text-sm text-slate-300 mt-1">University of the Pacific — School of Health Sciences, MSW Field Education</p>
+    </div>
+  </header>
+
+  <main class="max-w-3xl mx-auto px-4 sm:px-6 py-8">
+
+    <!-- Intro / submitted view swap -->
+    <div id="form-view" class="space-y-6">
+
+      <div class="section-card">
+        <p class="text-sm text-slate-600 leading-relaxed">
+          Immediately after the interview, the agency person(s) conducting the interview should complete and
+          submit this form as soon as possible. Fields marked <span class="text-[#F05A22] font-semibold">*</span>
+          are required.
+        </p>
+      </div>
+
+      <form id="interview-form" class="space-y-6">
+
+        <!-- Agency Information -->
+        <div class="section-card">
+          <p class="part-heading">Agency Information</p>
+          <div>
+            <label class="field-label">Agency Name <span class="text-[#F05A22]">*</span></label>
+            <input required id="q-agencyName" type="text" class="field-input" />
+          </div>
+          <div>
+            <label class="field-label">Interviewer Name/Title <span class="text-[#F05A22]">*</span></label>
+            <input required id="q-interviewerName" type="text" class="field-input" placeholder="Jane Smith, Field Supervisor" />
+          </div>
+          <div>
+            <label class="field-label">Date of Interview <span class="text-[#F05A22]">*</span></label>
+            <input required id="q-interviewDate" type="date" class="field-input" />
+          </div>
+          <div>
+            <label class="field-label">Phone/Email <span class="text-[#F05A22]">*</span></label>
+            <input required id="q-interviewerContact" type="text" class="field-input" placeholder="(555) 555-0100 or jane@agency.org" />
+          </div>
+        </div>
+
+        <!-- Student Information -->
+        <div class="section-card">
+          <p class="part-heading">Student Information</p>
+          <div>
+            <label class="field-label">Student Name <span class="text-[#F05A22]">*</span></label>
+            <input required id="q-studentName" type="text" class="field-input" />
+          </div>
+          <div>
+            <label class="field-label">Date of Interview <span class="text-[#F05A22]">*</span></label>
+            <input required id="q-studentInterviewDate" type="date" class="field-input" />
+          </div>
+        </div>
+
+        <!-- Interview Evaluation -->
+        <div class="section-card">
+          <p class="part-heading">Interview Evaluation</p>
+          <div id="evaluation-checks" class="space-y-1"></div>
+        </div>
+
+        <!-- Comments/Feedback -->
+        <div class="section-card">
+          <p class="part-heading">Comments/Feedback</p>
+          <textarea id="q-comments" rows="5" class="field-input resize-none"></textarea>
+        </div>
+
+        <!-- Agency Recommendation -->
+        <div class="section-card">
+          <p class="part-heading">Agency Recommendation <span class="text-[#F05A22]">*</span></p>
+          <label class="radio-row"><input required type="radio" name="recommendation" value="Recommend student for placement" class="accent-[#F05A22]"> Recommend student for placement</label>
+          <label class="radio-row"><input required type="radio" name="recommendation" value="Recommend with reservations" class="accent-[#F05A22]"> Recommend with reservations</label>
+          <label class="radio-row"><input required type="radio" name="recommendation" value="Do not recommend for placement" class="accent-[#F05A22]"> Do not recommend for placement</label>
+        </div>
+
+        <!-- Signature -->
+        <div class="section-card">
+          <p class="part-heading">Signature</p>
+          <div>
+            <label class="field-label">Signature of Interviewer <span class="text-[#F05A22]">*</span></label>
+            <input required id="q-signatureName" type="text" class="field-input" placeholder="Type your full name to sign" />
+          </div>
+        </div>
+
+        <div class="flex justify-end pb-8">
+          <button type="submit" class="px-6 py-3 text-sm font-semibold text-white bg-[#F05A22] hover:bg-[#C44A1C] rounded-xl shadow-sm transition-colors">
+            Submit Response
+          </button>
+        </div>
+
+      </form>
+    </div>
+
+    <!-- Success / copy view -->
+    <div id="success-view" class="hidden space-y-6">
+      <div class="section-card text-center">
+        <div class="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center mx-auto mb-3">
+          <svg class="w-7 h-7 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+          </svg>
+        </div>
+        <p class="text-lg font-bold text-slate-800">Response Submitted</p>
+        <p class="text-sm text-slate-500 mt-1">Your response has been saved for the Field Education Office to review.</p>
+      </div>
+
+      <div class="section-card">
+        <div class="flex items-center justify-between">
+          <p class="text-sm font-semibold text-slate-700">Copy your submission</p>
+          <button id="copy-submission-btn" class="px-4 py-2 text-sm font-medium text-white bg-[#F05A22] hover:bg-[#C44A1C] rounded-lg shadow-sm transition-colors">
+            Copy as Text
+          </button>
+        </div>
+        <p class="text-xs text-slate-400">
+          Until this form is fully wired into the system's database, use this button to copy your full submission
+          as plain text so it can be pasted into an email or document for transfer.
+        </p>
+        <pre id="submission-preview" class="text-xs text-slate-600 bg-slate-50 border border-slate-100 rounded-xl p-4 overflow-x-auto whitespace-pre-wrap"></pre>
+      </div>
+
+      <div class="flex justify-center pb-8">
+        <button id="new-submission-btn" class="text-sm font-medium text-[#F05A22] hover:underline">Submit another response</button>
+      </div>
+    </div>
+
+  </main>
+
+  <script src="agency-interview-form.js"></script>
+</body>
+</html>

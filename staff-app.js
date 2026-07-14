@@ -17,67 +17,126 @@ function loadOrSeed(key, defaults) {
 }
 
 // ── Agency Data ───────────────────────────────────────────────────────────────
+// Some agencies run multiple branches, each in its own city/county — those live
+// in the "locations" array so the agency is still one record (one card, one
+// profile, one contract) with several places attached to it, instead of the
+// directory needing a duplicate entry per branch.
 const DEFAULT_AGENCIES = [
   {
     id: 1, name: "Community Health & Wellness Center",
     contact: "Dr. Sarah Johnson", title: "Director of Field Education",
     email: "s.johnson@chwc.org", phone: "(212) 555-0456",
-    address: "456 Park Avenue", city: "San Francisco", county: "San Francisco County",
     contract: "Active",
+    locations: [
+      { address: "456 Park Avenue", city: "San Francisco", county: "San Francisco County", zip: "94108",
+        placements: [{ semester: "Fall 2025", count: 2 }, { semester: "Spring 2026", count: 3 }] },
+    ],
   },
   {
     id: 2, name: "Bay Area Mental Health Services",
     contact: "Marcus Reid", title: "Community Outreach Manager",
     email: "m.reid@bamhs.org", phone: "(510) 555-0234",
-    address: "88 Broadway Blvd, Oakland, CA 94607", city: "Oakland", county: "Alameda County",
     contract: "Active",
+    locations: [
+      { address: "88 Broadway Blvd", city: "Oakland", county: "Alameda County", zip: "94607",
+        placements: [{ semester: "Fall 2025", count: 3 }, { semester: "Spring 2026", count: 2 }] },
+      { address: "1220 N. Wilson Way", city: "Stockton", county: "San Joaquin County", zip: "95205",
+        placements: [{ semester: "Spring 2026", count: 1 }] },
+    ],
   },
   {
     id: 3, name: "Central Valley Youth Services",
     contact: "Lucia Flores", title: "Program Coordinator",
     email: "l.flores@cvys.org", phone: "(209) 555-0678",
-    address: "321 Oak Street, Modesto, CA 95354", city: "Modesto", county: "Stanislaus County",
     contract: "Pending",
+    locations: [
+      { address: "321 Oak Street", city: "Modesto", county: "Stanislaus County", zip: "95354",
+        placements: [{ semester: "Fall 2025", count: 2 }] },
+    ],
   },
   {
     id: 4, name: "Sacramento Family Support Center",
     contact: "Thomas Nguyen", title: "Field Supervisor",
     email: "t.nguyen@sfsc.org", phone: "(916) 555-0321",
-    address: "750 Capitol Avenue, Sacramento, CA 95814", city: "Sacramento", county: "Sacramento County",
     contract: "Active",
+    locations: [
+      { address: "750 Capitol Avenue", city: "Sacramento", county: "Sacramento County", zip: "95814",
+        placements: [{ semester: "Fall 2025", count: 4 }, { semester: "Spring 2026", count: 4 }, { semester: "Fall 2026", count: 3 }] },
+    ],
   },
   {
     id: 5, name: "Fresno Community Outreach",
     contact: "Angela Torres", title: "Social Work Supervisor",
     email: "a.torres@fco.org", phone: "(559) 555-0987",
-    address: "199 Fulton Street, Fresno, CA 93721", city: "Fresno", county: "Fresno County",
     contract: "Active",
+    locations: [
+      { address: "199 Fulton Street", city: "Fresno", county: "Fresno County", zip: "93721",
+        placements: [{ semester: "Spring 2026", count: 2 }] },
+    ],
   },
   {
     id: 6, name: "Oakland Social Services Agency",
     contact: "Derek Miles", title: "Agency Director",
     email: "d.miles@ossa.org", phone: "(510) 555-0112",
-    address: "500 Lake Merritt Blvd, Oakland, CA 94610", city: "Oakland", county: "Alameda County",
     contract: "Expired",
+    locations: [
+      { address: "500 Lake Merritt Blvd", city: "Oakland", county: "Alameda County", zip: "94610", placements: [] },
+    ],
   },
   {
     id: 7, name: "Stockton Behavioral Health Clinic",
     contact: "Patricia Lim", title: "Clinical Director",
     email: "p.lim@sbhc.org", phone: "(209) 555-0445",
-    address: "1040 W. Fremont Street, Stockton, CA 95203", city: "Stockton", county: "San Joaquin County",
     contract: "Active",
+    locations: [
+      { address: "1040 W. Fremont Street", city: "Stockton", county: "San Joaquin County", zip: "95203",
+        placements: [{ semester: "Fall 2025", count: 3 }] },
+    ],
   },
   {
     id: 8, name: "San Jose Healthcare Partners",
     contact: "James Okafor", title: "Placement Liaison",
     email: "j.okafor@sjhp.org", phone: "(408) 555-0773",
-    address: "2200 Alum Rock Avenue, San Jose, CA 95116", city: "San Jose", county: "Santa Clara County",
     contract: "Pending",
+    locations: [
+      { address: "2200 Alum Rock Avenue", city: "San Jose", county: "Santa Clara County", zip: "95116",
+        placements: [{ semester: "Spring 2026", count: 2 }] },
+      { address: "199 Fulton Street", city: "Fresno", county: "Fresno County", zip: "93721",
+        placements: [{ semester: "Fall 2026", count: 1 }] },
+    ],
   },
 ];
 
+// Older sessions stored a single flat address/city/county per agency — fold
+// those into a one-item "locations" array so every agency record, old or new,
+// has the same shape going forward. Also backfills "placements" (the by-
+// semester availability record) onto any location that predates it — the
+// short-lived single-number "placementsAvailable" field carried no semester,
+// so it's dropped rather than guessed at.
+function migrateAgencyLocations(list) {
+  let changed = false;
+  list.forEach(a => {
+    if (!Array.isArray(a.locations)) {
+      a.locations = [{ address: a.address || "", city: a.city || "", county: a.county || "" }];
+      delete a.address; delete a.city; delete a.county;
+      changed = true;
+    }
+    if (a.notes !== undefined) { delete a.notes; changed = true; }
+    a.locations.forEach(l => {
+      if (!Array.isArray(l.placements)) {
+        l.placements = [];
+        delete l.placementsAvailable;
+        changed = true;
+      }
+      if (typeof l.zip !== "string") { l.zip = ""; changed = true; }
+    });
+  });
+  return changed;
+}
+
 let agencies = loadOrSeed(AGENCIES_KEY, DEFAULT_AGENCIES);
 function persistAgencies() { localStorage.setItem(AGENCIES_KEY, JSON.stringify(agencies)); }
+if (migrateAgencyLocations(agencies)) persistAgencies();
 
 const CONTRACT_STYLES = {
   Active:  { pill: "bg-emerald-50 text-emerald-700 border border-emerald-200", dot: "bg-emerald-400 animate-pulse" },
@@ -344,6 +403,89 @@ noteIdCounter = roster.reduce((max, s) => {
 function persistNotes() { persistRoster(); }
 function loadSavedNotes() { /* no-op: roster already loaded with its notes above */ }
 
+// ── Cohort Options ───────────────────────────────────────────────────────────
+// Backs the "Cohort" filter dropdown on the Students tab — one flat list,
+// always sorted chronologically (see compareCohorts below), so a newly added
+// cohort just lands in its correct place instead of needing its own section.
+// Only the admin dashboard (IS_ADMIN) gets an "Other…" entry to add/rename/
+// delete cohorts — staff-dashboard.html just reads this same list.
+const COHORTS_KEY = "fepms-cohorts";
+const DEFAULT_COHORTS = ["Spring 2023", "Spring 2024", "Fall 2024", "Fall 2025", "Spring 2026", "Fall 2026"];
+
+function loadOrSeedCohorts() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(COHORTS_KEY));
+    // Older sessions stored {name, current} objects — unwrap those to plain
+    // names so this always ends up a flat string array either way.
+    if (Array.isArray(parsed) && parsed.length) {
+      return parsed.map(c => (typeof c === "string" ? c : c.name)).filter(Boolean);
+    }
+  } catch (e) { /* fall through to reseed */ }
+  const seeded = [...DEFAULT_COHORTS];
+  localStorage.setItem(COHORTS_KEY, JSON.stringify(seeded));
+  return seeded;
+}
+
+let cohortOptions = loadOrSeedCohorts();
+function persistCohorts() { localStorage.setItem(COHORTS_KEY, JSON.stringify(cohortOptions)); }
+
+// Chronological ordering for cohort names shaped "<Term> <Year>" — newest year
+// first, and within a year always Spring → Summer → Fall. Anything that
+// doesn't match the pattern sorts after the recognized ones, alphabetically.
+const COHORT_TERM_ORDER = { spring: 0, summer: 1, fall: 2 };
+
+function parseCohortName(name) {
+  const match = /^(spring|summer|fall)\s+(\d{4})$/i.exec(String(name).trim());
+  if (!match) return null;
+  return { term: match[1].toLowerCase(), year: Number(match[2]) };
+}
+
+function compareCohorts(a, b) {
+  const pa = parseCohortName(a);
+  const pb = parseCohortName(b);
+  if (pa && pb) {
+    return pb.year - pa.year || COHORT_TERM_ORDER[pa.term] - COHORT_TERM_ORDER[pb.term];
+  }
+  if (pa && !pb) return -1;
+  if (!pa && pb) return 1;
+  return a.localeCompare(b);
+}
+
+// Shared by the filter dropdown and every student-record cohort <select> below.
+function cohortOptionsHtml(selected) {
+  return [...cohortOptions].sort(compareCohorts)
+    .map(name => `<option value="${escapeHtml(name)}" ${name === selected ? "selected" : ""}>${escapeHtml(name)}</option>`)
+    .join("");
+}
+
+function renderCohortFilterOptions() {
+  const sel = document.getElementById("filter-cohort");
+  if (!sel) return;
+  const prevValue = sel.value;
+
+  let html = `<option value="">All Cohorts</option>`;
+  html += cohortOptionsHtml("");
+  if (IS_ADMIN) html += `<option value="__other__">Other…</option>`;
+
+  sel.innerHTML = html;
+  sel.value = [...sel.options].some(o => o.value === prevValue) ? prevValue : "";
+}
+
+// Used for a student record's own cohort assignment (the Add/Edit Student form's
+// sf-cohort and the roster panel's panel-cohort) — a real dropdown of existing
+// cohorts, never free text. Only admins get "+ Add New Cohort…"; picking it
+// prompts for a name right there and appends it to cohortOptions — no separate
+// field opens elsewhere on the page.
+function cohortFieldOptionsHtml(selected) {
+  const val = selected && selected !== "—" ? selected : "";
+  const hasMatch = cohortOptions.includes(val);
+  let html = `<option value="" ${val ? "" : "selected"}>—</option>`;
+  html += cohortOptionsHtml(val);
+  if (val && !hasMatch) html += `<option value="${escapeHtml(val)}" selected>${escapeHtml(val)}</option>`;
+  if (IS_ADMIN) html += `<option value="__add__">+ Add New Cohort…</option>`;
+  return html;
+}
+
 // ── Badge helpers ────────────────────────────────────────────────────────────
 function badge(text, cls) {
   return `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${cls}">${text}</span>`;
@@ -582,8 +724,7 @@ function renderRoster() {
           <button class="student-name-btn flex items-center gap-3 group" data-id="${s.id}">
             <div class="w-8 h-8 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center text-xs font-bold flex-shrink-0 group-hover:bg-teal-500 group-hover:text-white transition-colors">${initials(s.name)}</div>
             <div class="text-left">
-              <p class="font-medium text-teal-700 group-hover:text-teal-900 group-hover:underline">${s.name}</p>
-              <p class="text-xs text-slate-400">${s.phone}</p>
+              <p class="font-medium text-base text-teal-700 group-hover:text-teal-900 group-hover:underline">${s.name}</p>
             </div>
           </button>
         </td>
@@ -785,7 +926,7 @@ function instructorForAgency(agencyName, currentInstructor) {
 
 function agenciesForCounty(county, currentAgency) {
   const matched = agencies
-    .filter(a => a.county === county)
+    .filter(a => a.locations.some(l => l.county === county))
     .map(a => a.name)
     .sort();
   const options = ["—", ...matched];
@@ -833,12 +974,9 @@ function openStudentPanel(id) {
       <div class="grid grid-cols-2 gap-4">
         <div>
           <p class="text-sm font-semibold text-slate-400 uppercase tracking-widest mb-1">Cohort</p>
-          <input type="text" id="panel-cohort" list="panel-cohort-list" value="${s.cohort && s.cohort !== "—" ? s.cohort : ""}"
-            placeholder="e.g. Fall 2026"
-            class="w-full text-lg text-slate-700 bg-white border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#F05A22] focus:border-transparent" />
-          <datalist id="panel-cohort-list">
-            ${[...new Set(roster.map(r => r.cohort).filter(c => c && c !== "—"))].sort().map(c => `<option value="${c}"></option>`).join("")}
-          </datalist>
+          <select id="panel-cohort" class="w-full text-lg text-slate-700 bg-white border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#F05A22] focus:border-transparent cursor-pointer">
+            ${cohortFieldOptionsHtml(s.cohort)}
+          </select>
         </div>
         ${fieldworkSelect("Concentration", s.concentration, ["Behavioral Health", "Health Care"], "panel-concentration")}
         ${fieldworkSelect("Program Format", s.format, ["Hybrid", "Online"], "panel-format")}
@@ -851,7 +989,7 @@ function openStudentPanel(id) {
       <p class="text-base font-bold text-slate-900 uppercase tracking-wider">Fieldwork Information</p>
       <div class="grid grid-cols-2 gap-4">
         ${fieldworkSelect("City and County", `${s.city}, ${s.county}`,
-            [...new Set(agencies.map(a => `${a.city}, ${a.county}`))].sort(),
+            [...new Set(agencies.flatMap(a => a.locations.map(l => `${l.city}, ${l.county}`)))].sort(),
             "panel-city-county")}
         ${fieldworkSelect("Field Work Location", s.fieldAgency || "—",
             agenciesForCounty(s.county, s.fieldAgency),
@@ -944,8 +1082,25 @@ function openStudentPanel(id) {
     saveStudentField({ fieldEnd: dateInputToDisplay(this.value) });
   });
 
-  document.getElementById("panel-cohort").addEventListener("change", function () {
-    saveStudentField({ cohort: this.value.trim() || "—" });
+  // "+ Add New Cohort…" prompts for a name right in this same dropdown — no
+  // separate field opens elsewhere in the panel — then adds it to the shared
+  // cohort list and selects it.
+  document.getElementById("panel-cohort").addEventListener("change", async function () {
+    if (this.value !== "__add__") {
+      saveStudentField({ cohort: this.value || "—" });
+      return;
+    }
+    const name = (await cohortPrompt("Add New Cohort")) || "";
+    if (!name) {
+      this.innerHTML = cohortFieldOptionsHtml(s.cohort);
+      return;
+    }
+    if (!cohortOptions.some(c => c.toLowerCase() === name.toLowerCase())) {
+      addCohort(name);
+      renderCohortFilterOptions();
+    }
+    this.innerHTML = cohortFieldOptionsHtml(name);
+    saveStudentField({ cohort: name });
   });
 
   document.getElementById("panel-concentration").addEventListener("change", function () {
@@ -991,6 +1146,95 @@ function closeStudentPanel() {
   document.getElementById("panel-backdrop").classList.add("hidden");
   document.getElementById("student-panel").classList.add("hidden");
   activeStudentId = null;
+}
+
+// ── Generic modal helpers ────────────────────────────────────────────────────
+// Shared by every "-modal" element across both dashboards (Location Detail,
+// and — on admin-dashboard.html only — the Add/Edit modals in admin-app.js).
+function openModal(id) { document.getElementById(id).classList.remove("hidden"); }
+function closeModal(id) { document.getElementById(id).classList.add("hidden"); }
+
+document.querySelectorAll("[data-close-modal]").forEach(el => {
+  el.addEventListener("click", () => closeModal(el.dataset.closeModal));
+});
+
+// Promise-based replacement for window.prompt() — every "+ Add New …" option
+// (cohort, semester, city) used the browser's native prompt, which shows the
+// page's URL and doesn't match the app's look. This renders as a normal
+// modal instead; resolves to the trimmed input, or null if cancelled.
+let quickPromptResolve = null;
+
+function quickPrompt(title, label, placeholder = "") {
+  return new Promise(resolve => {
+    quickPromptResolve = resolve;
+    document.getElementById("quick-prompt-title").textContent = title;
+    document.getElementById("quick-prompt-label").textContent = label;
+    const input = document.getElementById("quick-prompt-input");
+    input.value = "";
+    input.placeholder = placeholder;
+    openModal("quick-prompt-modal");
+    setTimeout(() => input.focus(), 50);
+  });
+}
+
+function resolveQuickPrompt(value) {
+  closeModal("quick-prompt-modal");
+  if (!quickPromptResolve) return;
+  const resolve = quickPromptResolve;
+  quickPromptResolve = null;
+  resolve(value === null ? null : String(value).trim());
+}
+
+// quick-prompt-modal only exists on admin-dashboard.html (city/county are
+// admin-only) — guard the listener since staff-dashboard.html doesn't have it.
+const quickPromptFormEl = document.getElementById("quick-prompt-form");
+if (quickPromptFormEl) {
+  quickPromptFormEl.addEventListener("submit", e => {
+    e.preventDefault();
+    resolveQuickPrompt(document.getElementById("quick-prompt-input").value);
+  });
+}
+
+// Promise-based "Add New Cohort/Semester" prompt — Semester/Year are
+// dropdowns instead of free text so cohort names always come out as a clean
+// "<Term> <Year>" the chronological sort can parse. Bigger than the generic
+// quick-prompt modal per request. Resolves to "<Semester> <Year>", or null
+// if cancelled.
+let cohortPromptResolve = null;
+
+function cohortPrompt(title = "Add New Cohort") {
+  return new Promise(resolve => {
+    cohortPromptResolve = resolve;
+    document.getElementById("cohort-prompt-title").textContent = title;
+    const yearSel = document.getElementById("cohort-prompt-year");
+    const currentYear = new Date().getFullYear();
+    const years = [];
+    for (let y = currentYear - 3; y <= currentYear + 6; y++) years.push(y);
+    yearSel.innerHTML = years.map(y => `<option value="${y}" ${y === currentYear ? "selected" : ""}>${y}</option>`).join("");
+    document.getElementById("cohort-prompt-semester").value = "Fall";
+    openModal("cohort-prompt-modal");
+  });
+}
+
+function resolveCohortPrompt(value) {
+  closeModal("cohort-prompt-modal");
+  if (!cohortPromptResolve) return;
+  const resolve = cohortPromptResolve;
+  cohortPromptResolve = null;
+  resolve(value);
+}
+
+// cohort-prompt-modal only exists on admin-dashboard.html — every path that
+// can add a brand-new cohort/semester (vs. just picking an existing one) is
+// admin-only, so staff-dashboard.html never needs to show it.
+const cohortPromptFormEl = document.getElementById("cohort-prompt-form");
+if (cohortPromptFormEl) {
+  cohortPromptFormEl.addEventListener("submit", e => {
+    e.preventDefault();
+    const semester = document.getElementById("cohort-prompt-semester").value;
+    const year = document.getElementById("cohort-prompt-year").value;
+    resolveCohortPrompt(`${semester} ${year}`);
+  });
 }
 
 // ── Staff Notes (threaded) ───────────────────────────────────────────────────
@@ -1101,9 +1345,23 @@ function togglePinNote(studentId, noteId) {
 
 // ── Checklist ────────────────────────────────────────────────────────────────
 const CHECKLIST_KEY = "fepms-checklist";
+// Field education coordinators, kept separate from staffProfile — staffProfile
+// is "whoever is logged in right now" and reads "System Administrator" on
+// admin-dashboard.html, which would otherwise make the actual coordinator(s)
+// unassignable from the admin side. This list is what both dashboards' Task
+// Assigned To dropdowns pull from, alongside the field liaisons.
+const COORDINATORS = ["Dr. Frances Cooper"];
+
 // Computed lazily (not at module load) since staffProfile is declared later in this file.
 function checklistAssignees() {
-  return [staffProfile.name, ...staffProfile.liaisons];
+  return [...COORDINATORS, ...staffProfile.liaisons];
+}
+
+// Who can appear in "Assigned From" — same pool, plus whoever is currently
+// logged in (so "System Administrator" is pickable when assigning from the
+// admin dashboard, even though admins aren't a Task Assigned To option).
+function checklistAssignors() {
+  return [...new Set([staffProfile.name, ...checklistAssignees()])];
 }
 const CHECKLIST_DESCRIPTION_OPTIONS = ["Placement Status", "Agency Contract", "Enrollment Change", "Concentration Change", "Other"];
 const CHECKLIST_REMARKS = ["No Remarks", "On Track", "Needs Follow-Up", "At Risk", "Waiting on Response", "Resolved"];
@@ -1132,18 +1390,66 @@ function saveChecklist() {
   localStorage.setItem(CHECKLIST_KEY, JSON.stringify(checklist));
 }
 
+// ── Task Activity Log ────────────────────────────────────────────────────────
+// A running record of every change made to a checklist task — who touched
+// what and when — surfaced in the notification bell so anyone can see task
+// progress without having to already know what changed.
+const TASK_ACTIVITY_KEY = "fepms-task-activity";
+
+function loadTaskActivity() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(TASK_ACTIVITY_KEY));
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+let taskActivity = loadTaskActivity();
+
+function logTaskActivity(itemLabel, message) {
+  taskActivity.unshift({
+    id: Date.now() + Math.random(),
+    item: itemLabel || "Untitled task",
+    message,
+    date: todayLabel(),
+    by: staffProfile.name,
+  });
+  taskActivity = taskActivity.slice(0, 50);
+  localStorage.setItem(TASK_ACTIVITY_KEY, JSON.stringify(taskActivity));
+}
+
+// Turns a partial checklist "changes" object into a human-readable summary —
+// changes usually arrive one field at a time (inline table edits), but this
+// handles several at once too (e.g. the Add Task form).
+function describeChecklistChange(changes) {
+  const parts = [];
+  if ("item" in changes) parts.push(`renamed to "${changes.item}"`);
+  if ("description" in changes) parts.push(`category set to ${changes.description || "—"}`);
+  if ("descriptionOther" in changes) parts.push("description updated");
+  if ("assignedTo" in changes) parts.push(`assigned to ${changes.assignedTo || "—"}`);
+  if ("assignedFrom" in changes) parts.push(`assigned by ${changes.assignedFrom || "—"}`);
+  if ("deadline" in changes) parts.push(`deadline set to ${changes.deadline || "—"}`);
+  if ("remarks" in changes) parts.push(`marked ${changes.remarks}`);
+  if ("done" in changes) parts.push(changes.done ? "marked complete" : "marked incomplete");
+  return parts.join(", ") || "updated";
+}
+
 function addChecklistItem(data = {}) {
-  checklist.push({
+  const item = {
     id: checklistIdCounter++,
     item: data.item || "",
     description: data.description || "",
     descriptionOther: data.descriptionOther || "",
     assignedTo: data.assignedTo || "",
+    assignedFrom: data.assignedFrom || "",
     deadline: data.deadline || "",
     remarks: data.remarks || "No Remarks",
     done: !!data.done,
-  });
+  };
+  checklist.push(item);
   saveChecklist();
+  logTaskActivity(item.item, `created${item.assignedTo ? ` and assigned to ${item.assignedTo}` : ""}`);
   renderChecklist();
 }
 
@@ -1152,6 +1458,7 @@ function updateChecklistItem(id, changes) {
   if (!row) return;
   Object.assign(row, changes);
   saveChecklist();
+  logTaskActivity(row.item, describeChecklistChange(changes));
 }
 
 const CHECKLIST_TRASH_KEY = "fepms-checklist-trash";
@@ -1173,7 +1480,10 @@ function saveChecklistTrash() {
 
 function deleteChecklistItem(id) {
   const item = checklist.find(c => c.id === id);
-  if (item) checklistTrash.unshift({ ...item, deletedAt: todayLabel() });
+  if (item) {
+    checklistTrash.unshift({ ...item, deletedAt: todayLabel() });
+    logTaskActivity(item.item, "moved to trash");
+  }
   checklist = checklist.filter(c => c.id !== id);
   saveChecklist();
   saveChecklistTrash();
@@ -1188,6 +1498,7 @@ function restoreChecklistItem(id) {
   checklistTrash = checklistTrash.filter(c => c.id !== id);
   saveChecklist();
   saveChecklistTrash();
+  logTaskActivity(restored.item, "restored from trash");
   renderChecklist();
   renderChecklistTrash();
 }
@@ -1224,6 +1535,12 @@ function renderChecklist() {
         <select data-field="assignedTo" class="checklist-input text-sm text-slate-700 bg-transparent border border-transparent hover:border-slate-200 focus:border-slate-300 rounded-lg px-2 py-1.5 focus:outline-none cursor-pointer">
           <option value="" ${!c.assignedTo ? "selected" : ""}>—</option>
           ${checklistAssignees().map(name => `<option value="${name}" ${name === c.assignedTo ? "selected" : ""}>${name}</option>`).join("")}
+        </select>
+      </td>
+      <td class="td-cell">
+        <select data-field="assignedFrom" class="checklist-input text-sm text-slate-700 bg-transparent border border-transparent hover:border-slate-200 focus:border-slate-300 rounded-lg px-2 py-1.5 focus:outline-none cursor-pointer">
+          <option value="" ${!c.assignedFrom ? "selected" : ""}>—</option>
+          ${checklistAssignors().map(name => `<option value="${name}" ${name === c.assignedFrom ? "selected" : ""}>${name}</option>`).join("")}
         </select>
       </td>
       <td class="td-cell">
@@ -1275,8 +1592,7 @@ function wireChecklistEvents() {
     if (statusBtn) {
       const row = checklist.find(c => c.id === Number(statusBtn.dataset.id));
       if (row) {
-        row.done = !row.done;
-        saveChecklist();
+        updateChecklistItem(row.id, { done: !row.done });
         statusBtn.innerHTML = row.done ? '<span class="text-emerald-500">✓</span>' : '<span class="text-red-500">✗</span>';
         statusBtn.title = row.done ? "Mark incomplete" : "Mark complete";
       }
@@ -1307,6 +1623,7 @@ function renderChecklistTrash() {
       <td class="td-cell text-slate-700">${escapeHtml(c.item) || "—"}</td>
       <td class="td-cell text-slate-600">${escapeHtml(descLabel)}</td>
       <td class="td-cell text-slate-600">${escapeHtml(c.assignedTo) || "—"}</td>
+      <td class="td-cell text-slate-600">${escapeHtml(c.assignedFrom) || "—"}</td>
       <td class="td-cell text-slate-600">${c.deadline || "—"}</td>
       <td class="td-cell"><span class="text-sm font-medium rounded-full px-3 py-1.5 ${remarksStyle}">${escapeHtml(c.remarks)}</span></td>
       <td class="td-cell text-center">${c.done ? '<span class="text-emerald-500 text-2xl">✓</span>' : '<span class="text-red-500 text-2xl">✗</span>'}</td>
@@ -1345,6 +1662,13 @@ function openChecklistTaskModal() {
   assignedSelect.innerHTML = `<option value="">—</option>` +
     checklistAssignees().map(name => `<option value="${name}">${name}</option>`).join("");
 
+  // Defaults to whoever's currently logged in — still a plain dropdown, so
+  // it's easy to change if someone's entering a task on another coordinator's
+  // behalf.
+  const assignedFromSelect = document.getElementById("ct-assigned-from");
+  assignedFromSelect.innerHTML = checklistAssignors()
+    .map(name => `<option value="${name}" ${name === staffProfile.name ? "selected" : ""}>${name}</option>`).join("");
+
   const remarksSelect = document.getElementById("ct-remarks");
   remarksSelect.innerHTML = CHECKLIST_REMARKS.map(r =>
     `<option value="${r}" ${r === "No Remarks" ? "selected" : ""}>${r}</option>`
@@ -1371,6 +1695,7 @@ function wireChecklistTaskModalEvents() {
       description: document.getElementById("ct-description").value,
       descriptionOther: document.getElementById("ct-description-other").value.trim(),
       assignedTo: document.getElementById("ct-assigned").value,
+      assignedFrom: document.getElementById("ct-assigned-from").value,
       deadline: document.getElementById("ct-deadline").value,
       remarks: document.getElementById("ct-remarks").value,
       done: document.getElementById("ct-done").checked,
@@ -1749,6 +2074,195 @@ function wireFormsEvents() {
   });
 }
 
+// ── Agency Interview Responses (Agency Forms tab) ────────────────────────────
+// Shared with agency-interview-form.js via the same localStorage key — that
+// page is the agency-facing response form; this renders what admins/staff see.
+// Same list/detail/seed pattern as the Field Applications section above, just
+// scoped to the shorter Agency Interview Response Form fields.
+const AGENCY_INTERVIEWS_KEY = "fepms-agency-interviews";
+
+const AGENCY_EVALUATION_ITEMS = [
+  { id: "dressedProfessionally", label: "Student was dressed professionally" },
+  { id: "onTime", label: "Student was on time for interview" },
+  { id: "interpersonalSkills", label: "Student exhibited good interpersonal skills" },
+  { id: "understoodMission", label: "Student demonstrated understanding of agency mission/population served" },
+  { id: "communicatedInterest", label: "Student communicated interest in the position and learning objectives" },
+  { id: "respondedAppropriately", label: "Student responded appropriately to interview questions" },
+];
+
+const SEED_AGENCY_INTERVIEWS = [
+  {
+    id: "ai-seed-1", submittedAt: "2026-06-22T17:30:00.000Z",
+    agencyName: "Community Health & Wellness Center",
+    interviewerName: "Dr. Sarah Johnson, Director of Field Education",
+    interviewDate: "2026-06-22", interviewerContact: "s.johnson@chwc.org",
+    studentName: "Camila Alvarez", studentInterviewDate: "2026-06-22",
+    evaluation: { dressedProfessionally: true, onTime: true, interpersonalSkills: true, understoodMission: true, communicatedInterest: true, respondedAppropriately: true },
+    comments: "Camila was well-prepared and asked thoughtful questions about our crisis intervention protocols. She has relevant volunteer experience and would be a strong fit for our team.",
+    recommendation: "Recommend student for placement",
+    signatureName: "Dr. Sarah Johnson", signatureDate: "Jun 22, 2026",
+  },
+  {
+    id: "ai-seed-2", submittedAt: "2026-06-30T20:15:00.000Z",
+    agencyName: "Sacramento Family Support Center",
+    interviewerName: "Thomas Nguyen, Field Supervisor",
+    interviewDate: "2026-06-30", interviewerContact: "t.nguyen@sfsc.org",
+    studentName: "Daniel Nguyen", studentInterviewDate: "2026-06-30",
+    evaluation: { dressedProfessionally: true, onTime: true, interpersonalSkills: true, understoodMission: false, communicatedInterest: true, respondedAppropriately: true },
+    comments: "Daniel was personable but seemed unfamiliar with the range of services our center provides beyond intake. Would benefit from more research before placement begins.",
+    recommendation: "Recommend with reservations",
+    signatureName: "Thomas Nguyen", signatureDate: "Jun 30, 2026",
+  },
+];
+
+function loadAgencyInterviews() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(AGENCY_INTERVIEWS_KEY));
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveAgencyInterviews(subs) {
+  localStorage.setItem(AGENCY_INTERVIEWS_KEY, JSON.stringify(subs));
+}
+
+function seedAgencyInterviewsIfEmpty() {
+  if (loadAgencyInterviews().length === 0) saveAgencyInterviews(SEED_AGENCY_INTERVIEWS);
+}
+
+const AGENCY_RECOMMENDATION_STYLES = {
+  "Recommend student for placement": "bg-emerald-50 text-emerald-700 border border-emerald-200",
+  "Recommend with reservations": "bg-amber-50 text-amber-700 border border-amber-200",
+  "Do not recommend for placement": "bg-red-50 text-red-600 border border-red-200",
+};
+
+function renderAgencyFormsList() {
+  const listEl = document.getElementById("agency-forms-list");
+  const emptyEl = document.getElementById("agency-forms-empty");
+  const countEl = document.getElementById("agency-forms-count");
+  if (!listEl) return;
+
+  const subs = loadAgencyInterviews().slice().reverse();
+  if (countEl) countEl.textContent = subs.length ? `${subs.length} submission${subs.length > 1 ? "s" : ""}` : "";
+
+  if (!subs.length) {
+    listEl.innerHTML = "";
+    if (emptyEl) emptyEl.classList.remove("hidden");
+    return;
+  }
+  if (emptyEl) emptyEl.classList.add("hidden");
+
+  listEl.innerHTML = subs.map(sub => {
+    const recStyle = AGENCY_RECOMMENDATION_STYLES[sub.recommendation] || "bg-slate-100 text-slate-600 border border-slate-200";
+    return `
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden" data-sub-id="${sub.id}">
+      <div class="p-5 flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <p class="font-semibold text-slate-800">${escapeHtml(sub.studentName) || "Unnamed student"} <span class="text-slate-400 font-normal">at</span> ${escapeHtml(sub.agencyName) || "Unnamed agency"}</p>
+          <p class="text-xs text-slate-400 mt-0.5">
+            Submitted ${new Date(sub.submittedAt).toLocaleString()} · Interviewed by ${escapeHtml(sub.interviewerName) || "—"}
+          </p>
+        </div>
+        <div class="flex items-center gap-2 flex-shrink-0">
+          <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${recStyle}">${escapeHtml(sub.recommendation) || "No recommendation"}</span>
+          <button class="agency-forms-view-btn px-3 py-1.5 text-xs font-medium text-teal-700 bg-teal-50 hover:bg-teal-100 border border-teal-200 rounded-lg transition-colors" data-sub-id="${sub.id}">View</button>
+          <button class="agency-forms-delete-btn px-3 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 rounded-lg transition-colors" data-sub-id="${sub.id}">Delete</button>
+        </div>
+      </div>
+      <div class="agency-forms-detail hidden px-5 sm:px-6 pb-6 bg-slate-50/60 border-t border-slate-100" data-sub-id="${sub.id}"></div>
+    </div>`;
+  }).join("");
+}
+
+function renderAgencyInterviewDetailHtml(sub) {
+  const evalRows = AGENCY_EVALUATION_ITEMS.map(item => detailCheckRow(item.label, !!(sub.evaluation || {})[item.id])).join("");
+  const parts = [];
+
+  parts.push(detailSection("Agency Information", [
+    detailField("Agency Name", escapeHtml(sub.agencyName)),
+    detailField("Interviewer Name/Title", escapeHtml(sub.interviewerName)),
+    detailField("Date of Interview", escapeHtml(sub.interviewDate)),
+    detailField("Phone/Email", escapeHtml(sub.interviewerContact)),
+  ].join("")));
+
+  parts.push(detailSection("Student Information", [
+    detailField("Student Name", escapeHtml(sub.studentName)),
+    detailField("Date of Interview", escapeHtml(sub.studentInterviewDate)),
+  ].join("")));
+
+  parts.push(`
+    <div class="pt-5">
+      <p class="text-sm font-bold text-teal-700 uppercase tracking-wide mb-3">Interview Evaluation</p>
+      <div class="space-y-0.5">${evalRows}</div>
+    </div>`);
+
+  parts.push(`
+    <div class="pt-5">
+      <p class="text-sm font-bold text-teal-700 uppercase tracking-wide mb-3">Comments/Feedback</p>
+      <p class="text-base text-slate-700 leading-snug whitespace-pre-wrap">${escapeHtml(sub.comments) || "—"}</p>
+    </div>`);
+
+  parts.push(detailSection("Agency Recommendation", [
+    detailField("Recommendation", escapeHtml(sub.recommendation)),
+  ].join("")));
+
+  parts.push(detailSection("Signature", [
+    detailField("Signature of Interviewer", escapeHtml(sub.signatureName)),
+    detailField("Date", escapeHtml(sub.signatureDate)),
+  ].join("")));
+
+  return `<div class="divide-y divide-slate-100">${parts.join("")}</div>`;
+}
+
+function wireAgencyFormsEvents() {
+  const formLink = new URL("agency-interview-form.html", window.location.href).href;
+
+  const openLink = document.getElementById("open-agency-form-link");
+  if (openLink) openLink.href = formLink;
+
+  const copyLinkBtn = document.getElementById("copy-agency-form-link-btn");
+  if (copyLinkBtn) {
+    copyLinkBtn.addEventListener("click", () => {
+      navigator.clipboard.writeText(formLink).then(() => {
+        const orig = copyLinkBtn.innerHTML;
+        copyLinkBtn.textContent = "Copied ✓";
+        setTimeout(() => { copyLinkBtn.innerHTML = orig; }, 2000);
+      });
+    });
+  }
+
+  const listEl = document.getElementById("agency-forms-list");
+  if (!listEl) return;
+
+  listEl.addEventListener("click", e => {
+    const subs = loadAgencyInterviews();
+
+    const viewBtn = e.target.closest(".agency-forms-view-btn");
+    if (viewBtn) {
+      const detail = document.querySelector(`.agency-forms-detail[data-sub-id="${viewBtn.dataset.subId}"]`);
+      const sub = subs.find(s => s.id === viewBtn.dataset.subId);
+      if (detail && sub) {
+        if (detail.classList.contains("hidden") && !detail.dataset.rendered) {
+          detail.innerHTML = renderAgencyInterviewDetailHtml(sub);
+          detail.dataset.rendered = "true";
+        }
+        detail.classList.toggle("hidden");
+        viewBtn.textContent = detail.classList.contains("hidden") ? "View" : "Hide";
+      }
+      return;
+    }
+
+    const deleteBtn = e.target.closest(".agency-forms-delete-btn");
+    if (deleteBtn) {
+      if (!confirm("Delete this submission? Make sure you've transferred its data first.")) return;
+      saveAgencyInterviews(subs.filter(s => s.id !== deleteBtn.dataset.subId));
+      renderAgencyFormsList();
+    }
+  });
+}
+
 // ── Notes Modal (reused for email template preview) ──────────────────────────
 
 function closeNotesModal() {
@@ -1758,72 +2272,47 @@ function closeNotesModal() {
 }
 
 // ── Agency Renderer ───────────────────────────────────────────────────────────
-let activeCityFilter = "";
-
-function buildCityTabs() {
-  const cities = [...new Set(agencies.map(a => a.city))].sort();
-  const container = document.getElementById("agency-city-tabs");
-  container.innerHTML = "";
-
-  // "All" entry
-  const allBtn = document.createElement("button");
-  allBtn.className = "w-full flex items-center gap-3 px-4 py-3 text-left transition-colors agency-city-tab agency-city-active";
-  allBtn.dataset.city = "";
-  allBtn.innerHTML = `
-    <div class="w-8 h-8 rounded-lg bg-[#F05A22] flex items-center justify-center flex-shrink-0">
-      <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-4.724A1 1 0 013 14.382V5a1 1 0 011-1h4m0 0V2m0 2h4m0 0V2m0 2h4a1 1 0 011 1v9.382a1 1 0 01-.553.894L12 20m0 0l-3-1.5"/>
-      </svg>
-    </div>
-    <span class="text-sm font-semibold text-[#F05A22]">All Cities</span>`;
-  allBtn.addEventListener("click", () => setActiveCity(""));
-  container.appendChild(allBtn);
-
-  cities.forEach(city => {
-    const btn = document.createElement("button");
-    btn.className = "w-full flex items-center gap-3 px-4 py-3 text-left transition-colors agency-city-tab";
-    btn.dataset.city = city;
-    btn.innerHTML = `
-      <div class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0 city-icon-wrap">
-        <svg class="w-4 h-4 text-slate-500 city-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-        </svg>
-      </div>
-      <span class="text-sm font-medium text-slate-600 city-label">${city}</span>`;
-    btn.addEventListener("click", () => setActiveCity(city));
-    container.appendChild(btn);
-  });
+// City and County are plain filter dropdowns next to Contract Status, rebuilt
+// from whatever locations actually exist right now — called alongside each
+// other wherever agencies are added/edited so they stay in sync with the data.
+function populateAgencyCityFilter() {
+  const sel = document.getElementById("filter-city");
+  if (!sel) return;
+  const prevValue = sel.value;
+  const cities = [...new Set(agencies.flatMap(a => a.locations.map(l => l.city)))].filter(Boolean).sort();
+  sel.innerHTML = `<option value="">All Cities</option>` +
+    cities.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
+  sel.value = [...sel.options].some(o => o.value === prevValue) ? prevValue : "";
 }
 
-function setActiveCity(city) {
-  activeCityFilter = city;
-  document.querySelectorAll(".agency-city-tab").forEach(btn => {
-    const isActive = btn.dataset.city === city;
-    btn.classList.toggle("agency-city-active", isActive);
-    const iconWrap = btn.querySelector(".city-icon-wrap");
-    const icon = btn.querySelector(".city-icon");
-    const label = btn.querySelector(".city-label");
-    if (iconWrap) {
-      iconWrap.className = `w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 city-icon-wrap ${isActive ? "bg-[#F05A22]" : "bg-slate-100"}`;
-    }
-    if (icon) icon.className = `w-4 h-4 city-icon ${isActive ? "text-white" : "text-slate-500"}`;
-    if (label) label.className = `text-sm font-medium city-label ${isActive ? "text-[#F05A22] font-semibold" : "text-slate-600"}`;
-  });
-  renderAgencies();
+function populateAgencyCountyFilter() {
+  const sel = document.getElementById("filter-county");
+  if (!sel) return;
+  const prevValue = sel.value;
+  const counties = [...new Set(agencies.flatMap(a => a.locations.map(l => l.county)))].filter(Boolean).sort();
+  sel.innerHTML = `<option value="">All Counties</option>` +
+    counties.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
+  sel.value = [...sel.options].some(o => o.value === prevValue) ? prevValue : "";
 }
 
 function getAgencyFilters() {
   return {
     search: document.getElementById("agency-search").value.trim().toLowerCase(),
     contract: document.getElementById("filter-contract").value,
+    city: document.getElementById("filter-city").value,
+    county: document.getElementById("filter-county").value,
   };
 }
 
 function renderAgencies() {
-  const { search, contract } = getAgencyFilters();
+  const { search, contract, city, county } = getAgencyFilters();
   const filtered = agencies.filter(a => {
-    if (activeCityFilter && a.city !== activeCityFilter) return false;
+    // A single location must satisfy both the city and county filters
+    // together — an agency with a Fresno branch shouldn't show up just
+    // because it also happens to have an unrelated San Francisco branch.
+    if ((city || county) && !a.locations.some(l =>
+      (!city || l.city === city) && (!county || l.county === county)
+    )) return false;
     if (search && !a.name.toLowerCase().includes(search)) return false;
     if (contract && a.contract !== contract) return false;
     return true;
@@ -1840,19 +2329,24 @@ function renderAgencies() {
     empty.classList.add("hidden");
     grid.innerHTML = filtered.map(a => {
       const cs = CONTRACT_STYLES[a.contract] || CONTRACT_STYLES.Pending;
+      const locationsHtml = a.locations.map(l => `
+        <p class="flex items-start gap-2 text-sm text-slate-600">
+          <svg class="w-4 h-4 flex-shrink-0 mt-0.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          <span>${l.address}${l.zip ? " " + l.zip : ""}<br/><span class="text-slate-400">${l.city}, ${l.county}</span></span>
+        </p>`).join(`<div class="border-t border-dashed border-slate-100 my-2.5"></div>`);
       return `
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col gap-4">
+        <div data-id="${a.id}" class="agency-card-open bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col gap-4 cursor-pointer hover:border-slate-200 hover:shadow-md transition-all">
           <!-- Header -->
           <div class="flex items-start justify-between gap-3">
-            <div class="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center flex-shrink-0">
-              <svg class="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="w-12 h-12 rounded-xl bg-teal-50 flex items-center justify-center flex-shrink-0">
+              <svg class="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
               </svg>
             </div>
             <div class="flex-1 min-w-0">
-              <h3 class="font-bold text-slate-800 text-sm leading-snug">${a.name}</h3>
+              <h3 class="font-bold text-slate-800 text-lg leading-snug">${a.name}</h3>
             </div>
-            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium flex-shrink-0 ${cs.pill}">
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-sm font-medium flex-shrink-0 ${cs.pill}">
               <span class="w-1.5 h-1.5 rounded-full ${cs.dot}"></span>${a.contract} Contract
             </span>
           </div>
@@ -1860,44 +2354,51 @@ function renderAgencies() {
           <!-- Contact -->
           <div class="border-t border-slate-50 pt-4 grid grid-cols-1 gap-4">
             <div>
-              <p class="text-[10px] font-bold text-slate-900 uppercase tracking-widest mb-2">Contact Person</p>
-              <p class="text-sm font-semibold text-slate-700">${a.contact}</p>
-              <p class="text-xs text-slate-400 mb-2">${a.title}</p>
-              <div class="space-y-1">
-                <a href="mailto:${a.email}" class="flex items-center gap-1.5 text-xs text-indigo-600 hover:underline">
-                  <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+              <p class="text-xs font-bold text-slate-900 uppercase tracking-widest mb-2">Contact Person</p>
+              <p class="text-base font-semibold text-slate-700">${a.contact}</p>
+              <p class="text-sm text-slate-400 mb-2">${a.title}</p>
+              <div class="space-y-1.5">
+                <a href="mailto:${a.email}" onclick="event.stopPropagation()" class="flex items-center gap-1.5 text-sm text-indigo-600 hover:underline">
+                  <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                   ${a.email}
                 </a>
-                <p class="flex items-center gap-1.5 text-xs text-slate-600">
-                  <svg class="w-3.5 h-3.5 flex-shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+                <p class="flex items-center gap-1.5 text-sm text-slate-600">
+                  <svg class="w-4 h-4 flex-shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
                   ${a.phone}
                 </p>
               </div>
             </div>
             <div class="border-t border-slate-50 pt-3">
-              <p class="text-[10px] font-bold text-slate-900 uppercase tracking-widest mb-2">Location</p>
-              <p class="flex items-start gap-1.5 text-xs text-slate-600">
-                <svg class="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                <span>${a.address}<br/><span class="text-slate-400">${a.county}</span></span>
+              <p class="text-xs font-bold text-slate-900 uppercase tracking-widest mb-2">
+                Location${a.locations.length !== 1 ? "s" : ""} <span class="text-slate-400 normal-case font-medium">(${a.locations.length})</span>
               </p>
+              ${locationsHtml}
             </div>
           </div>
           ${IS_ADMIN ? `
           <div class="border-t border-slate-50 pt-3 flex items-center gap-2">
-            <button data-id="${a.id}" class="agency-edit-btn flex-1 py-1.5 text-xs font-medium text-teal-700 bg-teal-50 hover:bg-teal-100 border border-teal-200 rounded-lg transition-colors">Edit</button>
-            <button data-id="${a.id}" class="agency-delete-btn flex-1 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 border border-red-100 rounded-lg transition-colors">Delete</button>
+            <button data-id="${a.id}" class="agency-edit-btn flex-1 py-1.5 text-sm font-medium text-teal-700 bg-teal-50 hover:bg-teal-100 border border-teal-200 rounded-lg transition-colors">Edit</button>
+            <button data-id="${a.id}" class="agency-delete-btn flex-1 py-1.5 text-sm font-medium text-red-500 hover:bg-red-50 border border-red-100 rounded-lg transition-colors">Delete</button>
           </div>` : ""}
         </div>`;
     }).join("");
   }
   count.textContent = `Showing ${filtered.length} of ${agencies.length} agencies`;
 
+  document.querySelectorAll(".agency-card-open").forEach(card => {
+    card.addEventListener("click", () => openAgencyPanel(Number(card.dataset.id)));
+  });
+
   if (IS_ADMIN) {
     document.querySelectorAll(".agency-edit-btn").forEach(btn => {
-      btn.addEventListener("click", () => window.openAgencyEditModal && window.openAgencyEditModal(Number(btn.dataset.id)));
+      btn.addEventListener("click", e => {
+        e.stopPropagation();
+        window.openAgencyEditModal && window.openAgencyEditModal(Number(btn.dataset.id));
+      });
     });
     document.querySelectorAll(".agency-delete-btn").forEach(btn => {
-      btn.addEventListener("click", () => {
+      btn.addEventListener("click", e => {
+        e.stopPropagation();
         const a = agencies.find(x => x.id === Number(btn.dataset.id));
         if (!a) return;
         if (!confirm(`Delete ${a.name}? This cannot be undone.`)) return;
@@ -1907,6 +2408,312 @@ function renderAgencies() {
     });
   }
 }
+
+// ── Agency Profile Panel ─────────────────────────────────────────────────────
+// Slide-over panel opened by clicking an agency card (see ".agency-card-open"
+// wiring in renderAgencies above). Content is split into horizontal tabs —
+// Contact / Locations — since an agency has exactly one contact person but can
+// run several locations/counties. Clicking a location opens the (shared,
+// staff+admin editable) Location Detail modal to set placement availability.
+let activeAgencyId = null;
+let activeAgencyTab = "contact";
+const AGENCY_TABS = ["contact", "locations", "students"];
+
+function switchAgencyTab(tab) {
+  activeAgencyTab = tab;
+  AGENCY_TABS.forEach(t => {
+    document.getElementById(`agency-tab-${t}`).classList.toggle("hidden", t !== tab);
+  });
+  document.querySelectorAll(".agency-tab-btn").forEach(btn => {
+    const isActive = btn.dataset.tab === tab;
+    btn.classList.toggle("border-[#F05A22]", isActive);
+    btn.classList.toggle("text-[#F05A22]", isActive);
+    btn.classList.toggle("border-transparent", !isActive);
+    btn.classList.toggle("text-slate-500", !isActive);
+  });
+}
+
+// Builds just the Locations tab's inner content — factored out so the Location
+// Detail modal (and the "+ Add Location" button below) can refresh this one
+// tab in place after saving, without resetting whichever tab is open. Adding
+// a whole new location is admin-only, same as the rest of the agency record —
+// the "+ Add Location" button only renders here when IS_ADMIN.
+function agencyLocationsTabHtml(a) {
+  const addBtnRow = IS_ADMIN ? `
+    <div class="flex items-center justify-end py-3 border-b border-slate-200">
+      <button type="button" id="agency-add-location-btn" class="flex items-center gap-1 text-xs font-medium text-[#F05A22] hover:text-[#C44A1C]">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        Add Location
+      </button>
+    </div>` : "";
+  const rows = a.locations.map((l, i) => {
+    const placements = [...(l.placements || [])].sort((p1, p2) => compareCohorts(p1.semester, p2.semester));
+    const summary = placements.length
+      ? placements.map(p => `${escapeHtml(p.semester)} (${p.count})`).join(" · ")
+      : "No placements scheduled yet";
+    return `
+    <div class="agency-location-row flex items-start gap-2 py-3 px-2 -mx-2 rounded-lg cursor-pointer hover:bg-white transition-colors" data-index="${i}">
+      <svg class="w-4 h-4 flex-shrink-0 mt-1 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      <div class="flex-1 min-w-0">
+        <p class="text-lg text-slate-700 leading-snug">${escapeHtml(l.address)}${l.zip ? " " + escapeHtml(l.zip) : ""}<br/><span class="text-sm text-slate-400">${escapeHtml(l.city)}, ${escapeHtml(l.county)}</span></p>
+        <p class="text-xs font-semibold ${placements.length ? "text-emerald-600" : "text-slate-400"} mt-1">${summary}</p>
+      </div>
+      <svg class="w-4 h-4 flex-shrink-0 mt-2 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+    </div>`;
+  }).join(`<div class="border-t border-slate-100"></div>`);
+  return addBtnRow + (rows || `<p class="text-sm text-slate-400 text-center py-6">No locations yet.</p>`);
+}
+
+function wireAgencyLocationRows(agencyId) {
+  document.querySelectorAll(".agency-location-row").forEach(row => {
+    row.addEventListener("click", () => openLocationDetailModal(agencyId, Number(row.dataset.index)));
+  });
+  const addBtn = document.getElementById("agency-add-location-btn");
+  if (addBtn) addBtn.addEventListener("click", () => window.openAddLocationModal && window.openAddLocationModal(agencyId));
+}
+
+function renderAgencyLocationsTab(agencyId) {
+  const a = agencies.find(x => x.id === agencyId);
+  const container = document.getElementById("agency-tab-locations");
+  if (!a || !container) return;
+  container.innerHTML = agencyLocationsTabHtml(a);
+  wireAgencyLocationRows(agencyId);
+  const tabBtn = document.querySelector('.agency-tab-btn[data-tab="locations"]');
+  if (tabBtn) tabBtn.textContent = `Location${a.locations.length !== 1 ? "s" : ""} (${a.locations.length})`;
+}
+
+// Students placed at this agency — matched by name against each roster
+// entry's fieldAgency, same string-match convention the fieldwork dropdowns
+// already use. Concentration doubles as "role" here since that's the only
+// track/specialty classification the roster tracks per student. The specific
+// location is derived the same way the fieldwork dropdowns link the two —
+// by matching the student's city/county against the agency's locations —
+// since a student record doesn't store a direct pointer to one.
+function agencyStudentsTabHtml(a) {
+  const students = roster.filter(s => s.fieldAgency === a.name);
+  if (!students.length) {
+    return `<p class="text-sm text-slate-400 text-center py-6">No students placed at this agency yet.</p>`;
+  }
+  const rows = students.map(s => {
+    const loc = a.locations.find(l => l.city === s.city && l.county === s.county) ||
+                a.locations.find(l => l.county === s.county);
+    const locationText = loc ? `${loc.address}, ${loc.city}` : "—";
+    return `
+    <div class="agency-student-row flex items-center gap-3 py-3 px-2 -mx-2 rounded-lg cursor-pointer hover:bg-white transition-colors" data-id="${s.id}">
+      <div class="w-9 h-9 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center text-xs font-bold flex-shrink-0">${initials(s.name)}</div>
+      <div class="flex-1 min-w-0">
+        <p class="text-lg font-medium text-slate-800 leading-snug">${escapeHtml(s.name)}</p>
+        <div class="flex flex-wrap items-center gap-1.5 mt-1">
+          ${statusBadge(s.status)}
+          ${badge(s.concentration, CONCENTRATION_STYLES[s.concentration])}
+          ${badge(s.cohort, COHORT_STYLES)}
+        </div>
+        <p class="text-sm text-slate-500 mt-1.5 flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5 flex-shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          ${escapeHtml(locationText)}
+        </p>
+        <p class="text-sm text-slate-400 mt-1">${escapeHtml(s.fieldStart) || "—"} – ${escapeHtml(s.fieldEnd) || "—"}</p>
+      </div>
+      <svg class="w-4 h-4 flex-shrink-0 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+    </div>`;
+  }).join(`<div class="border-t border-slate-100"></div>`);
+  return rows;
+}
+
+function wireAgencyStudentRows() {
+  document.querySelectorAll(".agency-student-row").forEach(row => {
+    row.addEventListener("click", () => {
+      const id = Number(row.dataset.id);
+      closeAgencyPanel();
+      openStudentPanel(id);
+    });
+  });
+}
+
+// preserveTab: true re-renders the same agency's panel (e.g. right after
+// saving edits from the Edit Agency form) without snapping back to the
+// Contact tab — otherwise removing a location while on the Locations tab
+// left the panel showing stale data until it was closed and reopened.
+function openAgencyPanel(id, { preserveTab = false } = {}) {
+  const a = agencies.find(x => x.id === id);
+  if (!a) return;
+  const tabToShow = (preserveTab && activeAgencyId === id) ? activeAgencyTab : "contact";
+  activeAgencyId = id;
+
+  const cs = CONTRACT_STYLES[a.contract] || CONTRACT_STYLES.Pending;
+
+  document.getElementById("agency-panel-body").innerHTML = `
+    <!-- Avatar + name -->
+    <div class="flex items-center gap-4">
+      <div class="w-16 h-16 rounded-2xl bg-teal-50 flex items-center justify-center flex-shrink-0">
+        <svg class="w-7 h-7 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+        </svg>
+      </div>
+      <div>
+        <h2 class="text-2xl font-bold text-slate-800 leading-tight">${escapeHtml(a.name)}</h2>
+        <div class="mt-2">
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-sm font-medium ${cs.pill}">
+            <span class="w-1.5 h-1.5 rounded-full ${cs.dot}"></span>${a.contract} Contract
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab bar -->
+    <div class="flex items-center gap-5 border-b border-slate-200">
+      <button class="agency-tab-btn px-0.5 pb-3 text-sm font-semibold border-b-2 transition-colors" data-tab="contact">Contact</button>
+      <button class="agency-tab-btn px-0.5 pb-3 text-sm font-semibold border-b-2 transition-colors" data-tab="locations">Location${a.locations.length !== 1 ? "s" : ""} (${a.locations.length})</button>
+      <button class="agency-tab-btn px-0.5 pb-3 text-sm font-semibold border-b-2 transition-colors" data-tab="students">Students (${roster.filter(s => s.fieldAgency === a.name).length})</button>
+    </div>
+
+    <!-- Contact tab -->
+    <div id="agency-tab-contact" class="agency-tab-panel bg-slate-50 rounded-2xl p-4">
+      <div class="grid grid-cols-2 gap-4">
+        ${panelInfoRow("Name", escapeHtml(a.contact) || "—")}
+        ${panelInfoRow("Title", escapeHtml(a.title) || "—")}
+        ${panelInfoRow("Email", `<a href="mailto:${escapeHtml(a.email)}" class="text-indigo-600 hover:underline">${escapeHtml(a.email)}</a>`)}
+        ${panelInfoRow("Phone", escapeHtml(a.phone) || "—")}
+      </div>
+    </div>
+
+    <!-- Locations tab -->
+    <div id="agency-tab-locations" class="agency-tab-panel hidden bg-slate-50 rounded-2xl px-4">
+      ${agencyLocationsTabHtml(a)}
+    </div>
+
+    <!-- Students tab -->
+    <div id="agency-tab-students" class="agency-tab-panel hidden bg-slate-50 rounded-2xl px-4">
+      ${agencyStudentsTabHtml(a)}
+    </div>
+
+    ${IS_ADMIN ? `
+    <div class="flex items-center gap-2">
+      <button id="agency-panel-edit-btn" class="flex-1 py-2 text-sm font-medium text-teal-700 bg-teal-50 hover:bg-teal-100 border border-teal-200 rounded-lg transition-colors">Edit Agency</button>
+      <button id="agency-panel-delete-btn" class="flex-1 py-2 text-sm font-medium text-red-500 hover:bg-red-50 border border-red-100 rounded-lg transition-colors">Delete Agency</button>
+    </div>` : ""}
+  `;
+
+  document.querySelectorAll(".agency-tab-btn").forEach(btn => {
+    btn.addEventListener("click", () => switchAgencyTab(btn.dataset.tab));
+  });
+  switchAgencyTab(tabToShow);
+  wireAgencyLocationRows(a.id);
+  wireAgencyStudentRows();
+
+  if (IS_ADMIN) {
+    document.getElementById("agency-panel-edit-btn").addEventListener("click", () => {
+      window.openAgencyEditModal && window.openAgencyEditModal(a.id);
+    });
+    document.getElementById("agency-panel-delete-btn").addEventListener("click", () => {
+      if (!confirm(`Delete ${a.name}? This cannot be undone.`)) return;
+      deleteAgency(a.id);
+      closeAgencyPanel();
+      renderAgencies();
+    });
+  }
+
+  document.getElementById("agency-panel-backdrop").classList.remove("hidden");
+  document.getElementById("agency-panel").classList.remove("hidden");
+}
+
+function closeAgencyPanel() {
+  document.getElementById("agency-panel-backdrop").classList.add("hidden");
+  document.getElementById("agency-panel").classList.add("hidden");
+  activeAgencyId = null;
+}
+
+// ── Location Detail Modal ────────────────────────────────────────────────────
+// Opened by clicking a location row in the agency panel's Locations tab. Keeps
+// a running record of placement availability *by semester* — not just a
+// current count — so staff can look ahead and see when a site expects to have
+// openings for future students, not only what's open right now. Both staff
+// and admin can edit this: unlike the rest of the agency record, it isn't
+// admin-only, since coordinators are the ones tracking site capacity.
+let activeLocationRef = null; // { agencyId, index }
+
+function renderLocationDetailPlacementsList(placements) {
+  const container = document.getElementById("location-detail-placements-list");
+  const sorted = [...placements].sort((a, b) => compareCohorts(a.semester, b.semester));
+  container.innerHTML = sorted.length ? sorted.map(p => `
+    <div class="flex items-center justify-between gap-2 px-4 py-3 border border-slate-100 rounded-lg" data-semester="${escapeHtml(p.semester)}">
+      <span class="text-base text-slate-700"><span class="font-semibold">${escapeHtml(p.semester)}</span> — ${p.count} placement${p.count === 1 ? "" : "s"}</span>
+      <button type="button" class="location-detail-delete-btn text-slate-400 hover:text-red-500" title="Remove">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>`).join("") : `<p class="text-base text-slate-400 text-center py-4">No placements scheduled yet.</p>`;
+}
+
+function openLocationDetailModal(agencyId, index) {
+  const a = agencies.find(x => x.id === agencyId);
+  const loc = a && a.locations[index];
+  if (!loc) return;
+  if (!Array.isArray(loc.placements)) loc.placements = [];
+  activeLocationRef = { agencyId, index };
+  document.getElementById("location-detail-address").innerHTML =
+    `<p class="text-xl font-semibold text-slate-700">${escapeHtml(loc.address)}${loc.zip ? " " + escapeHtml(loc.zip) : ""}</p><p class="text-base text-slate-400 mt-0.5">${escapeHtml(loc.city)}, ${escapeHtml(loc.county)}</p>`;
+  renderLocationDetailPlacementsList(loc.placements);
+  document.getElementById("location-detail-semester").innerHTML = cohortFieldOptionsHtml("");
+  document.getElementById("location-detail-count").value = 1;
+  openModal("location-detail-modal");
+}
+
+function activeLocation() {
+  if (!activeLocationRef) return null;
+  const a = agencies.find(x => x.id === activeLocationRef.agencyId);
+  return (a && a.locations[activeLocationRef.index]) || null;
+}
+
+// "+ Add New Cohort…" in the semester picker works the same way it does
+// everywhere else in the app — prompt right in place, no separate field.
+document.getElementById("location-detail-semester").addEventListener("change", async e => {
+  if (e.target.value !== "__add__") return;
+  const name = (await cohortPrompt("Add New Semester")) || "";
+  if (!name) {
+    e.target.value = "";
+    return;
+  }
+  if (!cohortOptions.some(c => c.toLowerCase() === name.toLowerCase())) {
+    addCohort(name);
+    renderCohortFilterOptions();
+  }
+  e.target.innerHTML = cohortFieldOptionsHtml(name);
+});
+
+document.getElementById("location-detail-add-form").addEventListener("submit", e => {
+  e.preventDefault();
+  const loc = activeLocation();
+  if (!loc) return;
+  const semesterSel = document.getElementById("location-detail-semester");
+  const semester = semesterSel.value;
+  if (!semester || semester === "__add__") {
+    semesterSel.focus();
+    return;
+  }
+  const raw = parseInt(document.getElementById("location-detail-count").value, 10);
+  const count = Number.isFinite(raw) ? Math.max(0, raw) : 0;
+
+  const existing = loc.placements.find(p => p.semester === semester);
+  if (existing) existing.count = count;
+  else loc.placements.push({ semester, count });
+
+  persistAgencies();
+  renderLocationDetailPlacementsList(loc.placements);
+  renderAgencyLocationsTab(activeLocationRef.agencyId);
+  document.getElementById("location-detail-semester").innerHTML = cohortFieldOptionsHtml("");
+  document.getElementById("location-detail-count").value = 1;
+});
+
+document.getElementById("location-detail-placements-list").addEventListener("click", e => {
+  const btn = e.target.closest(".location-detail-delete-btn");
+  const loc = activeLocation();
+  if (!btn || !loc) return;
+  const semester = btn.closest("[data-semester]").dataset.semester;
+  loc.placements = loc.placements.filter(p => p.semester !== semester);
+  persistAgencies();
+  renderLocationDetailPlacementsList(loc.placements);
+  renderAgencyLocationsTab(activeLocationRef.agencyId);
+});
 
 // ── Staff Profile ─────────────────────────────────────────────────────────────
 const staffProfile = {
@@ -2223,31 +3030,31 @@ function renderTemplates() {
         <!-- Card header -->
         <div class="px-5 pt-5 pb-4 border-b border-slate-50">
           <div class="flex items-start justify-between gap-3 mb-2">
-            <h3 class="font-bold text-slate-800 text-base leading-snug">${t.title}</h3>
-            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold flex-shrink-0 ${catCls}">${t.category}</span>
+            <h3 class="font-bold text-slate-800 text-lg leading-snug">${t.title}</h3>
+            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-sm font-semibold flex-shrink-0 ${catCls}">${t.category}</span>
           </div>
-          <p class="text-xs text-slate-500"><span class="font-medium text-slate-400 uppercase tracking-wide text-[10px]">Subject: </span>${t.subject}</p>
+          <p class="text-sm text-slate-500"><span class="font-medium text-slate-400 uppercase tracking-wide text-xs">Subject: </span>${t.subject}</p>
         </div>
 
         <!-- Body preview -->
         <div class="px-5 py-4 flex-1">
           <p class="text-xs text-slate-400 uppercase tracking-wide font-semibold mb-2">Preview</p>
-          <p class="text-sm text-slate-500 leading-relaxed">${preview}</p>
+          <p class="text-base text-slate-500 leading-relaxed">${preview}</p>
         </div>
 
         <!-- Actions -->
         <div class="px-5 pb-5 flex items-center gap-2">
           <button onclick="expandTemplate(${t.id})"
-            class="flex-1 py-2 text-sm font-medium text-teal-700 bg-teal-50 hover:bg-teal-100 rounded-xl border border-teal-200 transition-colors">
+            class="flex-1 py-2 text-base font-medium text-teal-700 bg-teal-50 hover:bg-teal-100 rounded-xl border border-teal-200 transition-colors">
             View Full Template
           </button>
           <button onclick="copyTemplate(${t.id}, this)"
-            class="py-2 px-4 text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 rounded-xl transition-colors">
+            class="py-2 px-4 text-base font-medium text-white bg-teal-600 hover:bg-teal-700 rounded-xl transition-colors">
             Copy
           </button>
           ${IS_ADMIN ? `
-          <button class="template-edit-btn py-2 px-4 text-sm font-medium text-slate-600 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition-colors" data-id="${t.id}">Edit</button>
-          <button class="template-delete-btn py-2 px-3 text-sm font-medium text-red-500 hover:bg-red-50 rounded-xl transition-colors" data-id="${t.id}">Delete</button>` : ""}
+          <button class="template-edit-btn py-2 px-4 text-base font-medium text-slate-600 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition-colors" data-id="${t.id}">Edit</button>
+          <button class="template-delete-btn py-2 px-3 text-base font-medium text-red-500 hover:bg-red-50 rounded-xl transition-colors" data-id="${t.id}">Delete</button>` : ""}
         </div>
       </div>`;
   }).join("");
@@ -2324,6 +3131,7 @@ function switchTab(tab) {
     document.getElementById(`tab-${t}`).classList.toggle("hidden", t !== tab);
   });
   if (tab === "forms") renderFormsList();
+  if (tab === "agency-forms") renderAgencyFormsList();
   if (tab === "checklist") renderChecklist();
   document.querySelectorAll(".sidebar-tab").forEach(btn => {
     const isActive = btn.dataset.tab === tab;
@@ -2359,12 +3167,25 @@ function resetFilters() {
 function resetAgencyFilters() {
   document.getElementById("agency-search").value = "";
   document.getElementById("filter-contract").value = "";
-  setActiveCity("");
+  document.getElementById("filter-city").value = "";
+  document.getElementById("filter-county").value = "";
+  renderAgencies();
 }
 
 function wireEvents() {
-  ["search-input", "filter-cohort", "filter-concentration", "filter-liaison", "filter-status", "filter-format"]
+  ["search-input", "filter-concentration", "filter-liaison", "filter-status", "filter-format"]
     .forEach(id => document.getElementById(id).addEventListener("input", renderRoster));
+
+  // "Other…" (admin-only) opens the cohort management modal instead of
+  // filtering — snap the select back to "All Cohorts" either way.
+  document.getElementById("filter-cohort").addEventListener("change", e => {
+    if (e.target.value === "__other__") {
+      e.target.value = "";
+      window.openManageCohorts && window.openManageCohorts();
+      return;
+    }
+    renderRoster();
+  });
 
   document.getElementById("clear-filters").addEventListener("click", resetFilters);
   document.getElementById("header-reset").addEventListener("click", () => {
@@ -2373,14 +3194,18 @@ function wireEvents() {
 
   document.getElementById("agency-search").addEventListener("input", renderAgencies);
   document.getElementById("filter-contract").addEventListener("change", renderAgencies);
+  document.getElementById("filter-city").addEventListener("change", renderAgencies);
+  document.getElementById("filter-county").addEventListener("change", renderAgencies);
   document.getElementById("clear-agency-filters").addEventListener("click", resetAgencyFilters);
 
   wireChecklistEvents();
   wireChecklistTrashEvents();
   wireChecklistTaskModalEvents();
   wireFormsEvents();
+  wireAgencyFormsEvents();
 
-  buildCityTabs();
+  populateAgencyCityFilter();
+  populateAgencyCountyFilter();
 
   document.getElementById("template-search").addEventListener("input", renderTemplates);
   document.getElementById("filter-template-category").addEventListener("input", renderTemplates);
@@ -2434,6 +3259,7 @@ function wireEvents() {
       document.getElementById("avatar-dropdown").classList.add("hidden");
       closeSettings();
       if (activeStudentId !== null) closeStudentPanel();
+      if (activeAgencyId !== null) closeAgencyPanel();
       closeNotesModal();
     }
   });
@@ -2517,6 +3343,10 @@ function buildNotifications() {
   const needsPlacement = roster.filter(s => s.status === "Pending");
   const newlyAdded     = roster.filter(s => s.cohort === "Fall 2025");
   const contractAlerts = agencies.filter(a => a.contract === "Pending" || a.contract === "Expired");
+  // Most recent task activity first — every add/edit/delete/restore on a
+  // checklist task logs an entry (see logTaskActivity), so this is a running
+  // feed of task progress rather than a snapshot of current state.
+  const taskUpdates = taskActivity.slice(0, 5);
 
   function notifSection(title, dotCls, items, itemHtml) {
     if (!items.length) return "";
@@ -2545,14 +3375,16 @@ function buildNotifications() {
     notifSection("Newly Added", "bg-sky-400", newlyAdded,
       s => notifRow(s.name, `Added · ${s.cohort}`, "bg-sky-400")) +
     notifSection("Contract Updates", "bg-red-400", contractAlerts,
-      a => notifRow(a.name, `Contract ${a.contract}`, a.contract === "Expired" ? "bg-red-400" : "bg-amber-400"));
+      a => notifRow(a.name, `Contract ${a.contract}`, a.contract === "Expired" ? "bg-red-400" : "bg-amber-400")) +
+    notifSection("Task Updates", "bg-violet-400", taskUpdates,
+      t => notifRow(t.item, `${t.message} · ${t.by} · ${t.date}`, "bg-violet-400"));
 
   const panel = document.getElementById("notif-dropdown");
   panel.innerHTML = `
     <div class="px-4 py-2.5 border-b border-slate-100 flex items-center justify-between">
       <p class="font-semibold text-sm text-slate-800">Notifications</p>
       <span class="text-xs text-white bg-[#F05A22] rounded-full px-2 py-0.5 font-semibold">
-        ${needsPlacement.length + newlyAdded.length + contractAlerts.length}
+        ${needsPlacement.length + newlyAdded.length + contractAlerts.length + taskUpdates.length}
       </span>
     </div>
     <div class="max-h-[420px] overflow-y-auto divide-y divide-slate-50">
@@ -2640,6 +3472,17 @@ function deleteTemplate(id) {
   persistTemplates();
 }
 
+function addCohort(name) {
+  cohortOptions.push(name);
+  persistCohorts();
+  return name;
+}
+
+function deleteCohort(name) {
+  cohortOptions = cohortOptions.filter(c => c !== name);
+  persistCohorts();
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 const today = new Date();
 const yearEl = document.getElementById("footer-year");
@@ -2660,7 +3503,10 @@ renderPlacementBreakdown();
 renderChecklist();
 seedFieldApplicationsIfEmpty();
 renderFormsList();
+seedAgencyInterviewsIfEmpty();
+renderAgencyFormsList();
 renderTableHeader();
+renderCohortFilterOptions();
 renderRoster();
 renderAgencies();
 renderTemplates();
