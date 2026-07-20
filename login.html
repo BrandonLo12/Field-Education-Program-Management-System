@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign In — School of Health Science, Social Work</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ["Hanken Grotesk", "system-ui", "sans-serif"] }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="auth.js"></script>
+  <script>
+    // Already signed in? Skip straight to that role's dashboard instead of
+    // showing the form again.
+    (function () {
+      const session = getSession();
+      if (session) {
+        const user = AUTH_USERS.find(u => u.role === session.role);
+        if (user) window.location.href = user.redirect;
+      }
+    })();
+  </script>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans antialiased grid place-items-center p-4">
+
+  <div class="relative w-full max-w-md mx-auto">
+    <!-- Positioned out of flow so it doesn't shift the card away from dead
+         center — it floats just above the card instead of sharing its box. -->
+    <div class="absolute inset-x-0 bottom-full mb-8 flex flex-col items-center gap-4 text-center">
+      <img src="University_of_the_Pacific_seal.svg.webp" alt="University of the Pacific" class="w-20 h-20 object-contain" />
+      <div class="text-center">
+        <h1 class="text-2xl font-bold text-slate-800 leading-tight">School of Health Science, Social Work</h1>
+        <p class="text-base text-slate-500">University of the Pacific</p>
+      </div>
+    </div>
+
+    <form id="login-form" class="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 space-y-5 text-left">
+      <div>
+        <label for="login-username" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Username</label>
+        <input id="login-username" type="text" autocomplete="username" required autofocus
+          class="w-full text-base border border-slate-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#F05A22] focus:border-transparent" />
+      </div>
+      <div>
+        <label for="login-password" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Password</label>
+        <input id="login-password" type="password" autocomplete="current-password" required
+          class="w-full text-base border border-slate-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#F05A22] focus:border-transparent" />
+      </div>
+
+      <p id="login-error" class="hidden text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+        Incorrect username or password.
+      </p>
+
+      <button type="submit"
+        class="w-full py-3 text-base font-semibold text-white bg-[#F05A22] hover:bg-[#C44A1C] rounded-lg shadow-sm transition-colors">
+        Sign In
+      </button>
+    </form>
+  </div>
+
+  <script>
+    document.getElementById("login-form").addEventListener("submit", function (e) {
+      e.preventDefault();
+      const username = document.getElementById("login-username").value;
+      const password = document.getElementById("login-password").value;
+      const user = login(username, password);
+      const errorEl = document.getElementById("login-error");
+      if (!user) {
+        errorEl.classList.remove("hidden");
+        return;
+      }
+      errorEl.classList.add("hidden");
+      window.location.href = user.redirect;
+    });
+  </script>
+</body>
+</html>

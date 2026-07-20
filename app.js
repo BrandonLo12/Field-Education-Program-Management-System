@@ -420,16 +420,134 @@ function renderPlacementStatus() {
   ].join("");
 }
 
+// ── Checklist (read-only) ─────────────────────────────────────────────────────
+// Reads the same "fepms-student-workflow" store the coordinator/admin
+// dashboards write to (STUDENT_WORKFLOW_PHASES, workflowStats, etc. all come
+// from workflow-data.js, shared with staff-app.js) — this demo has exactly
+// one student, matching id 1 in staff-app.js's DEFAULT_ROSTER. Students see
+// their own progress and any notes coordinators left, but every control here
+// is inert: no checkboxes to toggle, no way to add or delete a note.
+const STUDENT_RECORD_ID = 1;
+
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function studentChecklistNoteEntryHtml(note) {
+  return `<div class="text-xs text-slate-600 bg-slate-50 rounded-md px-2 py-1">${note.date ? `<span class="text-slate-400">${escapeHtml(note.date)} — </span>` : ""}${escapeHtml(note.text)}</div>`;
+}
+
+function studentChecklistItemHtml(item, progress) {
+  const done = !!progress[item.id];
+  const notes = workflowItemNotes(progress, item.id);
+  return `
+    <div class="py-1">
+      <div class="flex items-start gap-2">
+        <span class="mt-0.5 w-4 h-4 rounded flex items-center justify-center flex-shrink-0 ${done ? "bg-emerald-500" : "border-2 border-slate-300"}">
+          ${done ? `<svg class="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>` : ""}
+        </span>
+        <span class="text-sm ${done ? "text-slate-400 line-through" : "text-slate-700"}">${escapeHtml(item.label)}</span>
+      </div>
+      ${notes.length ? `<div class="ml-6 mt-1 space-y-1">${notes.map(studentChecklistNoteEntryHtml).join("")}</div>` : ""}
+    </div>`;
+}
+
+function studentChecklistPhaseHtml(phase, progress, openPhaseId) {
+  const done = phase.items.filter(i => progress[i.id]).length;
+  const total = phase.items.length;
+  const isComplete = done === total;
+  return `
+    <details class="workflow-phase group border border-slate-200 bg-white rounded-xl overflow-hidden" data-phase-id="${phase.id}" ${phase.id === openPhaseId ? "open" : ""}>
+      <summary class="flex items-center justify-between gap-3 px-4 py-2.5 cursor-pointer select-none hover:bg-slate-50 marker:hidden [&::-webkit-details-marker]:hidden">
+        <span class="flex items-center gap-2 min-w-0">
+          <svg class="w-4 h-4 flex-shrink-0 text-slate-400 transition-transform group-open:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          <span class="text-sm font-semibold truncate ${isComplete ? "text-emerald-700" : "text-slate-700"}">${escapeHtml(phase.title)}</span>
+        </span>
+        <span class="text-xs font-semibold flex-shrink-0 rounded-full px-2.5 py-0.5 ${isComplete ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-500"}">${done}/${total}</span>
+      </summary>
+      <div class="px-4 pb-3 pt-1 space-y-1.5 border-t border-slate-100">
+        ${phase.items.map(item => studentChecklistItemHtml(item, progress)).join("")}
+      </div>
+    </details>`;
+}
+
+function studentChecklistDialHtml(phase, progress) {
+  const done = phase.items.filter(i => progress[i.id]).length;
+  const total = phase.items.length;
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  const isComplete = done === total;
+  return `
+    <button type="button" class="workflow-phase-dial flex flex-col items-center gap-1.5 w-20 flex-shrink-0" data-phase-id="${phase.id}" title="${escapeHtml(phase.title)}">
+      <span class="relative w-14 h-14">
+        <svg viewBox="0 0 36 36" class="w-14 h-14 origin-center -rotate-90">
+          <path class="text-slate-200" stroke="currentColor" stroke-width="3" fill="none"
+            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+          <path class="${isComplete ? "text-emerald-500" : "text-indigo-500"}" stroke="currentColor" stroke-width="3" stroke-linecap="round" fill="none"
+            stroke-dasharray="${pct}, 100"
+            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+        </svg>
+        <span class="absolute inset-0 flex items-center justify-center text-xs font-bold ${isComplete ? "text-emerald-600" : "text-slate-700"}">${pct}%</span>
+      </span>
+      <span class="text-[11px] font-medium text-slate-500 text-center leading-tight">${escapeHtml(phase.title)}</span>
+    </button>`;
+}
+
+function studentChecklistSectionHtml(phases, progress) {
+  const { done, total } = workflowStats(phases, progress);
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  const openId = firstIncompletePhaseId(phases, progress);
+  return `
+    <div class="flex items-center justify-between gap-3 mb-2">
+      <p class="text-sm text-slate-500">${done} of ${total} steps complete</p>
+      <p class="text-sm font-bold text-indigo-600">${pct}%</p>
+    </div>
+    <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden mb-4">
+      <div class="h-full bg-indigo-500 rounded-full" style="width:${pct}%"></div>
+    </div>
+    <div class="flex flex-wrap gap-x-2 gap-y-3 mb-4">
+      ${phases.map(p => studentChecklistDialHtml(p, progress)).join("")}
+    </div>
+    <div class="space-y-2">
+      ${phases.map(p => studentChecklistPhaseHtml(p, progress, openId)).join("")}
+    </div>`;
+}
+
+function wireStudentChecklistDials() {
+  document.querySelectorAll("#checklist-section .workflow-phase-dial").forEach(dial => {
+    dial.addEventListener("click", () => {
+      const details = document.querySelector(`#checklist-section .workflow-phase[data-phase-id="${dial.dataset.phaseId}"]`);
+      if (!details) return;
+      details.open = true;
+      details.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  });
+}
+
+// Re-reads localStorage on every call (rather than caching) so switching to
+// this tab always reflects the latest coordinator/admin edits.
+function renderStudentChecklist() {
+  const el = document.getElementById("checklist-section");
+  if (!el) return;
+  const progress = loadWorkflowStore(STUDENT_WORKFLOW_KEY)[STUDENT_RECORD_ID] || {};
+  el.innerHTML = studentChecklistSectionHtml(STUDENT_WORKFLOW_PHASES, progress);
+  wireStudentChecklistDials();
+}
+
 // ── Tab Switching ─────────────────────────────────────────────────────────────
 const STD_TAB_META = {
-  home:    { heading: "Welcome, " + student.name },
-  profile: { heading: "Profile" },
+  home:      { heading: "Welcome, " + student.name },
+  checklist: { heading: "Checklist" },
+  profile:   { heading: "Profile" },
 };
 
 function switchStudentTab(tab) {
-  ["home", "profile"].forEach(t => {
+  ["home", "checklist", "profile"].forEach(t => {
     document.getElementById(`tab-${t}`).classList.toggle("hidden", t !== tab);
   });
+
+  if (tab === "checklist") renderStudentChecklist();
 
   document.querySelectorAll(".std-tab").forEach(btn => {
     const isActive = btn.dataset.tab === tab;
@@ -450,6 +568,22 @@ function switchStudentTab(tab) {
   });
 
   document.getElementById("page-heading").textContent = STD_TAB_META[tab].heading;
+}
+
+// ── Sidebar Collapse ──────────────────────────────────────────────────────────
+const SIDEBAR_COLLAPSED_KEY = "fepms-sidebar-collapsed";
+
+function applySidebarCollapsed(collapsed) {
+  document.body.classList.toggle("sidebar-collapsed", collapsed);
+  localStorage.setItem(SIDEBAR_COLLAPSED_KEY, collapsed ? "1" : "0");
+}
+
+function toggleSidebar() {
+  applySidebarCollapsed(!document.body.classList.contains("sidebar-collapsed"));
+}
+
+function initSidebar() {
+  applySidebarCollapsed(localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "1");
 }
 
 // ── Theme Management ──────────────────────────────────────────────────────────
@@ -503,16 +637,54 @@ function closeSettings() {
   document.getElementById("settings-modal").classList.add("hidden");
 }
 
-function handleExit() {
-  if (confirm("Sign out of the Field Education Program?")) {
-    document.body.innerHTML = `
-      <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:system-ui,sans-serif;background:#f8fafc;">
-        <div style="text-align:center;color:#64748b;padding:2rem">
-          <p style="font-size:1.5rem;font-weight:700;color:#1e293b;margin-bottom:0.5rem">Signed Out</p>
-          <p>You have been signed out of the Field Education Program.</p>
-        </div>
-      </div>`;
-  }
+// Promise-based replacement for window.confirm() — matches the app's look
+// instead of the browser's native "localhost says" dialog. Resolves true if
+// the user confirms, false if they cancel (backdrop click or Cancel button).
+let confirmDialogResolve = null;
+
+function confirmDialog(message, { title = "Are you sure?", confirmLabel = "Confirm", danger = false } = {}) {
+  return new Promise(resolve => {
+    confirmDialogResolve = resolve;
+    document.getElementById("confirm-modal-title").textContent = title;
+    document.getElementById("confirm-modal-message").textContent = message;
+    const btn = document.getElementById("confirm-modal-confirm-btn");
+    btn.textContent = confirmLabel;
+    btn.className = `px-4 py-2 text-sm font-medium text-white rounded-lg shadow-sm ${danger ? "bg-red-500 hover:bg-red-600" : "bg-indigo-600 hover:bg-indigo-700"}`;
+    document.getElementById("confirm-modal").classList.remove("hidden");
+  });
+}
+
+function resolveConfirmDialog(value) {
+  document.getElementById("confirm-modal").classList.add("hidden");
+  if (!confirmDialogResolve) return;
+  const resolve = confirmDialogResolve;
+  confirmDialogResolve = null;
+  resolve(value);
+}
+
+// Promise-based replacement for window.alert() — same reasoning as above.
+let alertDialogResolve = null;
+
+function alertDialog(message, { title = "Heads up" } = {}) {
+  return new Promise(resolve => {
+    alertDialogResolve = resolve;
+    document.getElementById("alert-modal-title").textContent = title;
+    document.getElementById("alert-modal-message").textContent = message;
+    document.getElementById("alert-modal").classList.remove("hidden");
+  });
+}
+
+function resolveAlertDialog() {
+  document.getElementById("alert-modal").classList.add("hidden");
+  if (!alertDialogResolve) return;
+  const resolve = alertDialogResolve;
+  alertDialogResolve = null;
+  resolve();
+}
+
+async function handleExit() {
+  const ok = await confirmDialog("Sign out of the Field Education Program?", { title: "Sign out", confirmLabel: "Sign Out" });
+  if (ok) logout();
 }
 
 // ── Home Tab Renders ──────────────────────────────────────────────────────────
@@ -567,7 +739,9 @@ function renderHomeAcademicContact() {
 document.querySelectorAll(".std-tab").forEach(btn => {
   btn.addEventListener("click", () => switchStudentTab(btn.dataset.tab));
 });
+document.getElementById("sidebar-toggle").addEventListener("click", toggleSidebar);
 
+initSidebar();
 initTheme();
 initTextSize();
 

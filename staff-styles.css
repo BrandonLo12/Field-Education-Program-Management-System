@@ -40,18 +40,6 @@
   white-space: nowrap;
 }
 
-/* Checklist table headers — bigger/bolder/darker than the standard .th-cell */
-.checklist-th {
-  padding: 0.75rem 1.25rem;
-  text-align: left;
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: #0f172a;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  white-space: nowrap;
-}
-
 /* Sidebar nav tabs */
 .sidebar-tab {
   display: flex;
@@ -97,6 +85,25 @@
   margin-top: 0.125rem;
 }
 aside .sidebar-icon-wrap.bg-slate-200 { background-color: #e2e8f0 !important; }
+
+/* Collapsed sidebar — toggled by the hamburger button in the header, see
+   toggleSidebar() in staff-app.js. Shrinks the nav down to icons-only. */
+body.sidebar-collapsed #header-left,
+body.sidebar-collapsed aside {
+  width: 7rem !important;
+}
+body.sidebar-collapsed #header-left {
+  padding-left: 2rem !important;
+}
+body.sidebar-collapsed .sidebar-label {
+  display: none !important;
+}
+body.sidebar-collapsed .sidebar-tab {
+  justify-content: center;
+  gap: 0 !important;
+  padding-left: 0.5rem !important;
+  padding-right: 0.5rem !important;
+}
 
 /* Filter dropdowns */
 .filter-select {

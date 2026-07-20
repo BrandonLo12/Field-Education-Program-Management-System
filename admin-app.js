@@ -493,7 +493,7 @@ document.getElementById("agency-form").addEventListener("submit", e => {
   const idVal = document.getElementById("af-id").value;
   const locations = readAgencyLocationRows().filter(l => l.address || l.city || l.county);
   if (!locations.length) {
-    alert("Add at least one location.");
+    alertDialog("Add at least one location.");
     return;
   }
   const data = {
@@ -645,11 +645,12 @@ window.openManageCohorts = function () {
   openModal("manage-cohorts-modal");
 };
 
-document.getElementById("manage-cohorts-list").addEventListener("click", e => {
+document.getElementById("manage-cohorts-list").addEventListener("click", async e => {
   const delBtn = e.target.closest(".mc-delete-btn");
   if (!delBtn) return;
   const name = delBtn.closest("[data-cohort]").dataset.cohort;
-  if (!confirm(`Delete the "${name}" cohort option? Students already assigned to it are unaffected.`)) return;
+  const ok = await confirmDialog(`Delete the "${name}" cohort option? Students already assigned to it are unaffected.`, { title: "Delete cohort", confirmLabel: "Delete", danger: true });
+  if (!ok) return;
   deleteCohort(name);
   renderManageCohortsList();
   renderCohortFilterOptions();
@@ -661,7 +662,7 @@ document.getElementById("add-cohort-form").addEventListener("submit", e => {
   const name = input.value.trim();
   if (!name) return;
   if (cohortOptions.some(c => c.toLowerCase() === name.toLowerCase())) {
-    alert(`"${name}" is already in the cohort list.`);
+    alertDialog(`"${name}" is already in the cohort list.`);
     return;
   }
   addCohort(name);
@@ -779,4 +780,280 @@ document.getElementById("liaison-breakdown").addEventListener("change", e => {
   if (!filterSel) return;
   liaisonCohortFilters[filterSel.dataset.liaison] = filterSel.value;
   renderLiaisonBreakdown();
+});
+
+// ── Coordinators Tab (roster-style table + profile panel, admin only) ───────
+// "Coordinator" here is the same field-liaison concept used everywhere else
+// (staffProfile.liaisons / s.liaison) — there's no separate coordinator
+// record, so both the table and the panel below derive straight from the
+// roster, same as renderLiaisonBreakdown above. Laid out like the Students
+// tab (search bar, table, clickable rows, slide-over profile panel) but with
+// coordinator-specific content: caseload counts and placement progress
+// instead of personal/academic/fieldwork info.
+let coordinatorSearchTerm = "";
+
+function coordinatorStats(name) {
+  const students = roster.filter(s => (s.liaison || "Unassigned") === name);
+  const counts = {};
+  PLACEMENT_BUCKETS.forEach(b => counts[b] = 0);
+  students.forEach(s => counts[placementBucket(s)]++);
+  const placedCount = students.filter(s => s.fieldAgency && s.fieldAgency !== "—").length;
+  const placedPct = students.length ? Math.round((placedCount / students.length) * 100) : 0;
+  return { students, counts, placedCount, placedPct };
+}
+
+function renderCoordinatorsTab() {
+  const body = document.getElementById("coordinators-body");
+  const empty = document.getElementById("coordinators-empty");
+  if (!body) return;
+
+  // Union of real coordinator records (so a brand-new one with no students
+  // yet still shows up) and whatever names actually appear on the roster
+  // (covers "Unassigned" and any legacy liaison string with no matching
+  // coordinator record).
+  const rosterNames = roster.map(s => s.liaison || "Unassigned");
+  const names = [...new Set([...coordinatorNames(), ...rosterNames])].sort()
+    .filter(name => name.toLowerCase().includes(coordinatorSearchTerm));
+
+  if (!names.length) {
+    body.innerHTML = "";
+    empty.classList.remove("hidden");
+    return;
+  }
+  empty.classList.add("hidden");
+
+  body.innerHTML = names.map(name => {
+    const { students, counts, placedPct } = coordinatorStats(name);
+    return `
+      <tr class="coordinator-row border-b border-slate-50 last:border-0 cursor-pointer hover:bg-slate-50/60 transition-colors" data-name="${escapeHtml(name)}">
+        <td class="px-4 py-3">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center text-sm font-bold flex-shrink-0">${initials(name)}</div>
+            <p class="font-medium text-base text-teal-700">${escapeHtml(name)}</p>
+          </div>
+        </td>
+        <td class="px-4 py-3 text-slate-600">${students.length}</td>
+        <td class="px-4 py-3 text-slate-600">${counts.Pending}</td>
+        <td class="px-4 py-3 text-slate-600">${counts["Not Started"]}</td>
+        <td class="px-4 py-3 text-slate-600">${counts.Started}</td>
+        <td class="px-4 py-3 text-slate-600">${counts.Completed}</td>
+        <td class="px-4 py-3 text-slate-600">${placedPct}%</td>
+      </tr>`;
+  }).join("");
+
+  document.querySelectorAll(".coordinator-row").forEach(row => {
+    row.addEventListener("click", () => openCoordinatorPanel(row.dataset.name));
+  });
+}
+
+window.renderCoordinatorsTab = renderCoordinatorsTab;
+renderCoordinatorsTab();
+
+document.getElementById("coordinator-search").addEventListener("input", e => {
+  coordinatorSearchTerm = e.target.value.trim().toLowerCase();
+  renderCoordinatorsTab();
+});
+
+// ── Coordinator Profile Panel ─────────────────────────────────────────────────
+let activeCoordinatorName = null;
+const COORDINATOR_TABS = ["contact", "overview", "students"];
+
+// Coordinators derived only from roster.liaison values that don't have a
+// matching record yet (legacy data, or a name typed into the free-text
+// sf-liaison field) won't have a coordinators[] entry — fall back to blanks
+// rather than throwing.
+function coordinatorContactTabHtml(name) {
+  const c = coordinators.find(x => x.name === name) || {};
+  return `
+    <div class="bg-slate-50 rounded-2xl p-4">
+      <div class="grid grid-cols-2 gap-4">
+        ${panelInfoRow("Title", escapeHtml(c.title || "") || "—")}
+        ${panelInfoRow("Email", c.email ? `<a href="mailto:${escapeHtml(c.email)}" class="text-indigo-600 hover:underline">${escapeHtml(c.email)}</a>` : "—")}
+        ${panelInfoRow("Phone", escapeHtml(c.phone || "") || "—")}
+      </div>
+    </div>`;
+}
+
+function switchCoordinatorTab(tab) {
+  COORDINATOR_TABS.forEach(t => {
+    document.getElementById(`coordinator-tab-${t}`).classList.toggle("hidden", t !== tab);
+  });
+  document.querySelectorAll(".coordinator-tab-btn").forEach(btn => {
+    const isActive = btn.dataset.tab === tab;
+    btn.classList.toggle("border-[#F05A22]", isActive);
+    btn.classList.toggle("text-[#F05A22]", isActive);
+    btn.classList.toggle("border-transparent", !isActive);
+    btn.classList.toggle("text-slate-500", !isActive);
+  });
+}
+
+// Donut chart — same "circumference via stroke-dasharray" technique as the
+// small cards in renderLiaisonBreakdown, just sized up for its own tab.
+function coordinatorOverviewHtml(name) {
+  const { students, counts, placedCount, placedPct } = coordinatorStats(name);
+  const total = students.length;
+  const BUCKET_HEX = { Pending: "#fbbf24", "Not Started": "#94a3b8", Started: "#34d399", Completed: "#818cf8" };
+  const R = 54, C = 2 * Math.PI * R;
+  let cumulative = 0;
+  const arcs = total ? PLACEMENT_BUCKETS.map(b => {
+    if (!counts[b]) return "";
+    const len = (counts[b] / total) * C;
+    const arc = `<circle cx="70" cy="70" r="${R}" fill="none" stroke="${BUCKET_HEX[b]}" stroke-width="16"
+      stroke-dasharray="${len.toFixed(2)} ${(C - len).toFixed(2)}" stroke-dashoffset="${(-cumulative).toFixed(2)}"
+      transform="rotate(-90 70 70)"><title>${b}: ${counts[b]}</title></circle>`;
+    cumulative += len;
+    return arc;
+  }).join("") : "";
+
+  const summary = PLACEMENT_BUCKETS.map(b => `
+    <div class="flex items-center justify-between py-2.5 border-b border-slate-50 last:border-0">
+      <span class="flex items-center gap-2 text-base text-slate-600">
+        <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background:${BUCKET_HEX[b]}"></span>${b}
+      </span>
+      <span class="text-base font-semibold text-slate-800">${counts[b]}</span>
+    </div>`).join("");
+
+  return `
+    <div class="flex flex-col sm:flex-row items-center gap-8 bg-slate-50 rounded-2xl p-6">
+      <div class="relative inline-flex items-center justify-center flex-shrink-0">
+        <svg width="140" height="140" viewBox="0 0 140 140">
+          <circle cx="70" cy="70" r="${R}" fill="none" stroke="#e2e8f0" stroke-width="16"/>
+          ${arcs}
+        </svg>
+        <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+          <span class="text-2xl font-bold text-slate-800 leading-none">${total}</span>
+          <span class="text-sm text-slate-400 mt-0.5">student${total !== 1 ? "s" : ""}</span>
+        </div>
+      </div>
+      <div class="w-full sm:w-64">${summary}</div>
+    </div>
+    <div class="flex items-center justify-between bg-white border border-slate-100 rounded-2xl p-4">
+      <span class="text-base font-medium text-slate-600">Placed with an Agency</span>
+      <span class="text-lg font-bold text-teal-700">${placedCount} · ${placedPct}%</span>
+    </div>`;
+}
+
+function coordinatorStudentsTabHtml(name) {
+  const { students } = coordinatorStats(name);
+  if (!students.length) {
+    return `<p class="text-base text-slate-400 text-center py-6">No students assigned yet.</p>`;
+  }
+  return students.map(s => `
+    <div class="coordinator-student-row flex items-center gap-4 py-4 px-2 -mx-2 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors" data-id="${s.id}">
+      <div class="w-11 h-11 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center text-base font-bold flex-shrink-0">${initials(s.name)}</div>
+      <div class="flex-1 min-w-0">
+        <p class="text-lg font-medium text-slate-800 leading-snug">${escapeHtml(s.name)}</p>
+        <div class="flex flex-wrap items-center gap-1.5 mt-1">
+          ${statusBadge(s.status)}
+          ${badge(s.concentration, CONCENTRATION_STYLES[s.concentration])}
+          ${badge(s.cohort, COHORT_STYLES)}
+        </div>
+      </div>
+      <svg class="w-4 h-4 flex-shrink-0 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+    </div>`).join(`<div class="border-t border-slate-100"></div>`);
+}
+
+function wireCoordinatorStudentRows() {
+  document.querySelectorAll(".coordinator-student-row").forEach(row => {
+    row.addEventListener("click", () => {
+      const id = Number(row.dataset.id);
+      closeCoordinatorPanel();
+      openStudentPanel(id);
+    });
+  });
+}
+
+function openCoordinatorPanel(name) {
+  activeCoordinatorName = name;
+  const { students } = coordinatorStats(name);
+  const badgeCls = name === "Unassigned" ? DEFAULT_LIAISON_STYLE : (LIAISON_STYLES[name] || DEFAULT_LIAISON_STYLE);
+
+  document.getElementById("coordinator-panel-body").innerHTML = `
+    <!-- Avatar + name -->
+    <div class="flex items-center gap-4">
+      <div class="w-16 h-16 rounded-2xl bg-[#F05A22] text-white flex items-center justify-center text-xl font-bold flex-shrink-0">${initials(name)}</div>
+      <div>
+        <h2 class="text-2xl font-bold text-slate-800 leading-tight">${escapeHtml(name)}</h2>
+        <div class="mt-2">${badge(`${students.length} student${students.length !== 1 ? "s" : ""}`, badgeCls)}</div>
+      </div>
+    </div>
+
+    <!-- Tab bar -->
+    <div class="flex items-center gap-4 border-b border-slate-200">
+      <button class="coordinator-tab-btn px-0.5 pb-2 text-base font-semibold border-b-2 transition-colors" data-tab="contact">Contact</button>
+      <button class="coordinator-tab-btn px-0.5 pb-2 text-base font-semibold border-b-2 transition-colors" data-tab="overview">Overview</button>
+      <button class="coordinator-tab-btn px-0.5 pb-2 text-base font-semibold border-b-2 transition-colors" data-tab="students">Students (${students.length})</button>
+    </div>
+
+    <!-- Contact tab -->
+    <div id="coordinator-tab-contact" class="coordinator-tab-panel">
+      ${coordinatorContactTabHtml(name)}
+    </div>
+
+    <!-- Overview tab -->
+    <div id="coordinator-tab-overview" class="coordinator-tab-panel hidden space-y-4">
+      ${coordinatorOverviewHtml(name)}
+    </div>
+
+    <!-- Students tab -->
+    <div id="coordinator-tab-students" class="coordinator-tab-panel hidden">
+      ${coordinatorStudentsTabHtml(name)}
+    </div>
+  `;
+
+  document.querySelectorAll(".coordinator-tab-btn").forEach(btn => {
+    btn.addEventListener("click", () => switchCoordinatorTab(btn.dataset.tab));
+  });
+  switchCoordinatorTab("contact");
+  wireCoordinatorStudentRows();
+
+  document.getElementById("coordinator-panel-backdrop").classList.remove("hidden");
+  document.getElementById("coordinator-panel").classList.remove("hidden");
+}
+
+function closeCoordinatorPanel() {
+  document.getElementById("coordinator-panel-backdrop").classList.add("hidden");
+  document.getElementById("coordinator-panel").classList.add("hidden");
+  activeCoordinatorName = null;
+}
+
+// ── Add Coordinator ───────────────────────────────────────────────────────────
+// Keeps the Add/Edit Student form's Field Liaison autocomplete (a datalist,
+// not a strict dropdown — a coordinator can still type a name that isn't in
+// the list) in sync with the current coordinator roster.
+function renderLiaisonDatalist() {
+  document.getElementById("sf-liaison-list").innerHTML =
+    coordinatorNames().map(name => `<option value="${escapeHtml(name)}"></option>`).join("");
+}
+renderLiaisonDatalist();
+
+function openCoordinatorAddModal() {
+  document.getElementById("coordinator-form").reset();
+  openModal("coordinator-form-modal");
+  document.getElementById("cf-name").focus();
+}
+
+document.getElementById("add-coordinator-btn").addEventListener("click", openCoordinatorAddModal);
+
+document.getElementById("coordinator-form").addEventListener("submit", async e => {
+  e.preventDefault();
+  const name = document.getElementById("cf-name").value.trim();
+  const email = document.getElementById("cf-email").value.trim();
+  if (!name || !email) return;
+
+  if (coordinators.some(c => c.email.toLowerCase() === email.toLowerCase())) {
+    await alertDialog(`A coordinator with the email "${email}" already exists.`, { title: "Duplicate email" });
+    return;
+  }
+
+  addCoordinator({
+    name,
+    email,
+    title: document.getElementById("cf-title").value,
+    phone: document.getElementById("cf-phone").value,
+  });
+  renderCoordinatorsTab();
+  renderLiaisonFilterOptions();
+  renderLiaisonDatalist();
+  closeModal("coordinator-form-modal");
 });

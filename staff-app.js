@@ -460,15 +460,23 @@ function cohortOptionsHtml(selected) {
 
 function renderCohortFilterOptions() {
   const sel = document.getElementById("filter-cohort");
-  if (!sel) return;
-  const prevValue = sel.value;
+  if (sel) {
+    const prevValue = sel.value;
+    let html = `<option value="">All Cohorts</option>`;
+    html += cohortOptionsHtml("");
+    if (IS_ADMIN) html += `<option value="__other__">Other…</option>`;
+    sel.innerHTML = html;
+    sel.value = [...sel.options].some(o => o.value === prevValue) ? prevValue : "";
+  }
 
-  let html = `<option value="">All Cohorts</option>`;
-  html += cohortOptionsHtml("");
-  if (IS_ADMIN) html += `<option value="__other__">Other…</option>`;
-
-  sel.innerHTML = html;
-  sel.value = [...sel.options].some(o => o.value === prevValue) ? prevValue : "";
+  // Home page Placement Breakdown widget has its own cohort filter — plain,
+  // no "Other…" management option since it's just narrowing a chart.
+  const pbSel = document.getElementById("placement-breakdown-cohort");
+  if (pbSel) {
+    const prevValue = pbSel.value;
+    pbSel.innerHTML = `<option value="">All Cohorts</option>` + cohortOptionsHtml("");
+    pbSel.value = [...pbSel.options].some(o => o.value === prevValue) ? prevValue : "";
+  }
 }
 
 // Used for a student record's own cohort assignment (the Add/Edit Student form's
@@ -484,6 +492,61 @@ function cohortFieldOptionsHtml(selected) {
   if (val && !hasMatch) html += `<option value="${escapeHtml(val)}" selected>${escapeHtml(val)}</option>`;
   if (IS_ADMIN) html += `<option value="__add__">+ Add New Cohort…</option>`;
   return html;
+}
+
+// ── Coordinators (Field Liaisons) ────────────────────────────────────────────
+// Backs every "Field Liaison" dropdown/filter across both dashboards — one
+// flat list of { id, name, email, title, phone } records. Only the admin
+// dashboard (IS_ADMIN) gets the "Add Coordinator" form (see admin-app.js);
+// staff-dashboard.html just reads this same list, same pattern as
+// cohortOptions above.
+const COORDINATORS_KEY = "fepms-coordinators";
+const DEFAULT_COORDINATORS = [
+  { id: 1, name: "Annette", email: "annette@pacific.edu", title: "Field Liaison", phone: "" },
+  { id: 2, name: "Halide",  email: "halide@pacific.edu",  title: "Field Liaison", phone: "" },
+  { id: 3, name: "Vanessa", email: "vanessa@pacific.edu", title: "Field Liaison", phone: "" },
+];
+
+function loadOrSeedCoordinators() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(COORDINATORS_KEY));
+    if (Array.isArray(parsed) && parsed.length) return parsed;
+  } catch (e) { /* fall through to reseed */ }
+  const seeded = [...DEFAULT_COORDINATORS];
+  localStorage.setItem(COORDINATORS_KEY, JSON.stringify(seeded));
+  return seeded;
+}
+
+let coordinators = loadOrSeedCoordinators();
+let coordinatorIdCounter = coordinators.reduce((max, c) => Math.max(max, c.id), 0) + 1;
+function persistCoordinators() { localStorage.setItem(COORDINATORS_KEY, JSON.stringify(coordinators)); }
+
+function coordinatorNames() {
+  return coordinators.map(c => c.name).sort();
+}
+
+function addCoordinator(data) {
+  const coordinator = {
+    id: coordinatorIdCounter++,
+    name: data.name.trim(),
+    email: data.email.trim(),
+    title: (data.title || "").trim() || "Field Liaison",
+    phone: (data.phone || "").trim(),
+  };
+  coordinators.push(coordinator);
+  persistCoordinators();
+  return coordinator;
+}
+
+// Rebuilds the Students tab's "Field Liaison" filter from the current
+// coordinator list — mirrors renderCohortFilterOptions above.
+function renderLiaisonFilterOptions() {
+  const sel = document.getElementById("filter-liaison");
+  if (!sel) return;
+  const prevValue = sel.value;
+  sel.innerHTML = `<option value="">All Liaisons</option>` +
+    coordinatorNames().map(name => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join("");
+  sel.value = [...sel.options].some(o => o.value === prevValue) ? prevValue : "";
 }
 
 // ── Badge helpers ────────────────────────────────────────────────────────────
@@ -671,13 +734,16 @@ function renderPlacementBreakdown() {
   // Admins see the whole roster; coordinators only see the students under the
   // field liaisons they themselves cover (staffProfile.liaisons), not everyone.
   const scopedRoster = IS_ADMIN ? roster : roster.filter(s => (staffProfile.liaisons || []).includes(s.liaison));
-  const total = scopedRoster.length;
+  const cohortSel = document.getElementById("placement-breakdown-cohort");
+  const cohortFilter = cohortSel ? cohortSel.value : "";
+  const filteredRoster = cohortFilter ? scopedRoster.filter(s => s.cohort === cohortFilter) : scopedRoster;
+  const total = filteredRoster.length;
 
   const counts = {};
   PLACEMENT_BUCKETS.forEach(b => counts[b] = 0);
-  scopedRoster.forEach(s => counts[placementBucket(s)]++);
+  filteredRoster.forEach(s => counts[placementBucket(s)]++);
 
-  const placedCount = scopedRoster.filter(s => s.fieldAgency && s.fieldAgency !== "—").length;
+  const placedCount = filteredRoster.filter(s => s.fieldAgency && s.fieldAgency !== "—").length;
   const placedPct = total ? Math.round((placedCount / total) * 100) : 0;
 
   el.innerHTML = `
@@ -701,6 +767,48 @@ function renderPlacementBreakdown() {
     <div class="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
       <span class="text-xs font-medium text-slate-600">Placed with an Agency</span>
       <span class="text-sm font-bold text-teal-700">${placedCount} · ${placedPct}%</span>
+    </div>
+  `;
+}
+
+// ── Agency Contract Status ───────────────────────────────────────────────────
+const CONTRACT_BUCKETS = ["Active", "Pending", "Expired"];
+const CONTRACT_BUCKET_STYLES = {
+  Active:  { bar: "bg-emerald-400", text: "text-emerald-700" },
+  Pending: { bar: "bg-amber-400",   text: "text-amber-700" },
+  Expired: { bar: "bg-red-400",     text: "text-red-600" },
+};
+
+function renderAgencyContractStatus() {
+  const el = document.getElementById("agency-contract-status");
+  if (!el) return;
+
+  const total = agencies.length;
+  const counts = {};
+  CONTRACT_BUCKETS.forEach(b => counts[b] = 0);
+  agencies.forEach(a => { counts[a.contract] = (counts[a.contract] || 0) + 1; });
+
+  el.innerHTML = `
+    <div class="space-y-3">
+      ${CONTRACT_BUCKETS.map(b => {
+        const count = counts[b];
+        const pct = total ? Math.round((count / total) * 100) : 0;
+        const style = CONTRACT_BUCKET_STYLES[b];
+        return `
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs font-medium text-slate-600">${b}</span>
+              <span class="text-xs font-semibold ${style.text}">${count} · ${pct}%</span>
+            </div>
+            <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+              <div class="h-full rounded-full ${style.bar}" style="width:${pct}%"></div>
+            </div>
+          </div>`;
+      }).join("")}
+    </div>
+    <div class="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
+      <span class="text-xs font-medium text-slate-600">Total Agencies</span>
+      <span class="text-sm font-bold text-teal-700">${total}</span>
     </div>
   `;
 }
@@ -772,15 +880,17 @@ function renderRoster() {
       btn.addEventListener("click", () => window.openStudentEditModal && window.openStudentEditModal(Number(btn.dataset.id)));
     });
     document.querySelectorAll(".student-delete-btn").forEach(btn => {
-      btn.addEventListener("click", () => {
+      btn.addEventListener("click", async () => {
         const s = roster.find(r => r.id === Number(btn.dataset.id));
         if (!s) return;
-        if (!confirm(`Delete ${s.name} from the roster? This cannot be undone.`)) return;
+        const ok = await confirmDialog(`Delete ${s.name} from the roster? This cannot be undone.`, { title: "Delete student", confirmLabel: "Delete", danger: true });
+        if (!ok) return;
         deleteStudent(s.id);
         renderRoster();
         renderStats();
         renderPlacementBreakdown();
         if (window.renderLiaisonBreakdown) window.renderLiaisonBreakdown();
+        if (window.renderCoordinatorsTab) window.renderCoordinatorsTab();
       });
     });
   }
@@ -847,8 +957,217 @@ const CA_LOCATIONS = [
   "Marysville, Yuba County",
 ].sort();
 
+// ── Workflow Checklists (per-student + per-agency) ───────────────────────────
+// STUDENT_WORKFLOW_PHASES, AGENCY_WORKFLOW_PHASES, the *_WORKFLOW_KEY names,
+// loadWorkflowStore, workflowStats, firstIncompletePhaseId, workflowNoteKey,
+// and workflowItemNotes all live in workflow-data.js (loaded before this
+// file) — shared with app.js's read-only student Checklist tab so the phase
+// text and progress-store format can never drift between the two.
+let studentWorkflowStore = loadWorkflowStore(STUDENT_WORKFLOW_KEY);
+let agencyWorkflowStore  = loadWorkflowStore(AGENCY_WORKFLOW_KEY);
+
+function saveStudentWorkflowStore() { localStorage.setItem(STUDENT_WORKFLOW_KEY, JSON.stringify(studentWorkflowStore)); }
+function saveAgencyWorkflowStore()  { localStorage.setItem(AGENCY_WORKFLOW_KEY, JSON.stringify(agencyWorkflowStore)); }
+
+// Appends a note to an item's running log in place (converting a legacy
+// single-string note to the array format if that's what's there) and
+// returns the new entry plus its index so the caller can append it to the
+// DOM directly instead of re-rendering the whole list.
+function addWorkflowItemNote(store, activeId, itemId, text) {
+  if (!store[activeId]) store[activeId] = {};
+  const key = workflowNoteKey(itemId);
+  const notes = workflowItemNotes(store[activeId], itemId);
+  const entry = { text, date: todayLabel() };
+  notes.push(entry);
+  store[activeId][key] = notes;
+  return { entry, index: notes.length - 1 };
+}
+
+// Removes one note by its position in the running log and drops the key
+// entirely once the log is empty again, so an item with no notes doesn't
+// leave a stray empty array behind in the store.
+function deleteWorkflowItemNote(store, activeId, itemId, index) {
+  if (!store[activeId]) return;
+  const key = workflowNoteKey(itemId);
+  const notes = workflowItemNotes(store[activeId], itemId);
+  notes.splice(index, 1);
+  if (notes.length) store[activeId][key] = notes;
+  else delete store[activeId][key];
+}
+
+function workflowNoteEntryHtml(note, index) {
+  return `<div class="workflow-item-note-entry flex items-start justify-between gap-2 text-xs text-slate-600 bg-slate-50 rounded-md px-2 py-1" data-note-index="${index}">
+    <span>${note.date ? `<span class="text-slate-400">${escapeHtml(note.date)} — </span>` : ""}${escapeHtml(note.text)}</span>
+    <button type="button" class="workflow-item-note-delete flex-shrink-0 leading-none text-sm font-bold text-slate-500 hover:text-red-500" title="Delete note" aria-label="Delete note">×</button>
+  </div>`;
+}
+
+function workflowPhaseHtml(phase, progress, openPhaseId) {
+  const done = phase.items.filter(i => progress[i.id]).length;
+  const total = phase.items.length;
+  const isComplete = done === total;
+  return `
+    <details class="workflow-phase group border border-slate-200 bg-white rounded-xl overflow-hidden" data-phase-id="${phase.id}" ${phase.id === openPhaseId ? "open" : ""}>
+      <summary class="flex items-center justify-between gap-3 px-4 py-2.5 cursor-pointer select-none hover:bg-slate-50 marker:hidden [&::-webkit-details-marker]:hidden">
+        <span class="flex items-center gap-2 min-w-0">
+          <svg class="workflow-chevron-icon w-4 h-4 flex-shrink-0 text-slate-400 transition-transform group-open:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          <span class="workflow-phase-title text-sm font-semibold truncate ${isComplete ? "text-emerald-700" : "text-slate-700"}">${escapeHtml(phase.title)}</span>
+        </span>
+        <span class="workflow-phase-badge text-xs font-semibold flex-shrink-0 rounded-full px-2.5 py-0.5 ${isComplete ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-500"}">${done}/${total}</span>
+      </summary>
+      <div class="px-4 pb-3 pt-1 space-y-1.5 border-t border-slate-100">
+        ${phase.items.map(item => `
+          <div class="py-1">
+            <label class="flex items-start gap-2 cursor-pointer">
+              <input type="checkbox" data-item-id="${item.id}" class="workflow-item-checkbox mt-0.5 w-4 h-4 rounded accent-[#F05A22] cursor-pointer flex-shrink-0" ${progress[item.id] ? "checked" : ""} />
+              <span class="text-sm ${progress[item.id] ? "text-slate-400 line-through" : "text-slate-700"}">${escapeHtml(item.label)}</span>
+            </label>
+            <div class="workflow-item-note-wrap ml-6 mt-1 space-y-1">
+              <div class="workflow-item-notes space-y-1" data-item-id="${item.id}">${workflowItemNotes(progress, item.id).map(workflowNoteEntryHtml).join("")}</div>
+              <input type="text" data-item-id="${item.id}" placeholder="Add a note and press Enter…"
+                class="workflow-item-note-input w-full text-xs text-slate-600 placeholder:text-slate-300 border border-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#F05A22] focus:border-transparent" />
+            </div>
+          </div>`).join("")}
+      </div>
+    </details>`;
+}
+
+// Circular per-phase progress dial — an SVG donut built on the classic
+// "circumference = 100" trick (radius 15.9155 gives a 100-unit perimeter, so
+// stroke-dasharray can just use the percentage directly). Clicking a dial
+// jumps to and opens that phase's row in the checklist below (see
+// wireWorkflowDials), so the dials double as phase navigation.
+function workflowPhaseDialHtml(phase, progress) {
+  const done = phase.items.filter(i => progress[i.id]).length;
+  const total = phase.items.length;
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  const isComplete = done === total;
+  return `
+    <button type="button" class="workflow-phase-dial flex flex-col items-center gap-1.5 w-20 flex-shrink-0" data-phase-id="${phase.id}" title="${escapeHtml(phase.title)}">
+      <span class="relative w-14 h-14">
+        <svg viewBox="0 0 36 36" class="w-14 h-14 origin-center -rotate-90">
+          <path class="text-slate-200" stroke="currentColor" stroke-width="3" fill="none"
+            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+          <path class="workflow-dial-arc ${isComplete ? "text-emerald-500" : "text-[#F05A22]"}" stroke="currentColor" stroke-width="3" stroke-linecap="round" fill="none"
+            stroke-dasharray="${pct}, 100"
+            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+        </svg>
+        <span class="workflow-dial-pct absolute inset-0 flex items-center justify-center text-xs font-bold ${isComplete ? "text-emerald-600" : "text-slate-700"}">${pct}%</span>
+      </span>
+      <span class="workflow-dial-name text-[11px] font-medium text-slate-500 text-center leading-tight">${escapeHtml(phase.title)}</span>
+    </button>`;
+}
+
+function workflowSectionHtml(phases, progress) {
+  const { done, total } = workflowStats(phases, progress);
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  const openId = firstIncompletePhaseId(phases, progress);
+  return `
+    <div class="flex items-center justify-between gap-3 mb-2">
+      <p class="workflow-summary-text text-sm text-slate-500">${done} of ${total} steps complete</p>
+      <p class="workflow-summary-pct text-sm font-bold text-[#F05A22]">${pct}%</p>
+    </div>
+    <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden mb-4">
+      <div class="workflow-progress-bar h-full bg-[#F05A22] rounded-full" style="width:${pct}%"></div>
+    </div>
+    <div class="flex flex-wrap gap-x-2 gap-y-3 mb-4">
+      ${phases.map(p => workflowPhaseDialHtml(p, progress)).join("")}
+    </div>
+    <div class="space-y-2">
+      ${phases.map(p => workflowPhaseHtml(p, progress, openId)).join("")}
+    </div>`;
+}
+
+// Opens (and scrolls to) the phase row a dial represents — wired fresh each
+// time a student/agency panel renders, same as the tab buttons.
+function wireWorkflowDials(sectionEl) {
+  if (!sectionEl) return;
+  sectionEl.querySelectorAll(".workflow-phase-dial").forEach(dial => {
+    dial.addEventListener("click", () => {
+      const details = sectionEl.querySelector(`.workflow-phase[data-phase-id="${dial.dataset.phaseId}"]`);
+      if (!details) return;
+      details.open = true;
+      details.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  });
+}
+
+// Updates only what a single checkbox toggle visually affects — the item's
+// own label, its phase's badge, and the section's overall progress —
+// instead of re-rendering the whole accordion, which would collapse
+// whichever phases the coordinator currently has open.
+function handleWorkflowCheckboxChange(cb, phases, progress, sectionEl) {
+  if (!sectionEl) return;
+  const label = cb.closest("label").querySelector("span");
+  if (label) {
+    label.classList.toggle("text-slate-400", cb.checked);
+    label.classList.toggle("line-through", cb.checked);
+    label.classList.toggle("text-slate-700", !cb.checked);
+  }
+  const detailsEl = cb.closest(".workflow-phase");
+  if (detailsEl) {
+    const boxes = detailsEl.querySelectorAll(".workflow-item-checkbox");
+    const phaseDone = [...boxes].filter(b => b.checked).length;
+    const phaseTotal = boxes.length;
+    const phasePct = phaseTotal ? Math.round((phaseDone / phaseTotal) * 100) : 0;
+    const isComplete = phaseDone === phaseTotal;
+    const badge = detailsEl.querySelector(".workflow-phase-badge");
+    if (badge) {
+      badge.textContent = `${phaseDone}/${phaseTotal}`;
+      badge.className = `workflow-phase-badge text-xs font-semibold flex-shrink-0 rounded-full px-2.5 py-0.5 ${isComplete ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-500"}`;
+    }
+    const title = detailsEl.querySelector(".workflow-phase-title");
+    if (title) {
+      title.classList.toggle("text-emerald-700", isComplete);
+      title.classList.toggle("text-slate-700", !isComplete);
+    }
+    const dial = sectionEl.querySelector(`.workflow-phase-dial[data-phase-id="${detailsEl.dataset.phaseId}"]`);
+    if (dial) {
+      const arc = dial.querySelector(".workflow-dial-arc");
+      const pctLabel = dial.querySelector(".workflow-dial-pct");
+      if (arc) {
+        arc.setAttribute("stroke-dasharray", `${phasePct}, 100`);
+        arc.classList.toggle("text-emerald-500", isComplete);
+        arc.classList.toggle("text-[#F05A22]", !isComplete);
+      }
+      if (pctLabel) {
+        pctLabel.textContent = `${phasePct}%`;
+        pctLabel.classList.toggle("text-emerald-600", isComplete);
+        pctLabel.classList.toggle("text-slate-700", !isComplete);
+      }
+    }
+  }
+  const { done, total } = workflowStats(phases, progress);
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  const summary = sectionEl.querySelector(".workflow-summary-text");
+  const pctEl = sectionEl.querySelector(".workflow-summary-pct");
+  const bar = sectionEl.querySelector(".workflow-progress-bar");
+  if (summary) summary.textContent = `${done} of ${total} steps complete`;
+  if (pctEl) pctEl.textContent = `${pct}%`;
+  if (bar) bar.style.width = `${pct}%`;
+}
+
 // ── Student Profile Panel ────────────────────────────────────────────────────
 let activeStudentId = null;
+
+// Switches between the "Information", "Checklist", and "Staff Notes" tabs in
+// the student panel — mirrors switchAgencyTab's active/inactive styling so
+// both panels' tab bars look and behave the same way.
+const STUDENT_PANEL_TABS = ["info", "workflow", "notes"];
+
+function switchStudentPanelTab(tab) {
+  STUDENT_PANEL_TABS.forEach(t => {
+    const el = document.getElementById(`panel-tab-${t}`);
+    if (el) el.classList.toggle("hidden", t !== tab);
+  });
+  document.querySelectorAll(".student-panel-tab-btn").forEach(btn => {
+    const isActive = btn.dataset.tab === tab;
+    btn.classList.toggle("border-[#F05A22]", isActive);
+    btn.classList.toggle("text-[#F05A22]", isActive);
+    btn.classList.toggle("border-transparent", !isActive);
+    btn.classList.toggle("text-slate-500", !isActive);
+  });
+}
 
 function panelInfoRow(label, value) {
   return `<div>
@@ -943,6 +1262,8 @@ function openStudentPanel(id) {
   activeStudentId = id;
 
   const cs = STATUS_STYLES[s.status] || STATUS_STYLES.Pending;
+  const studentWorkflowSummary = workflowStats(STUDENT_WORKFLOW_PHASES, studentWorkflowStore[s.id] || {});
+  const studentWorkflowPct = studentWorkflowSummary.total ? Math.round(studentWorkflowSummary.done / studentWorkflowSummary.total * 100) : 0;
 
   document.getElementById("panel-body").innerHTML = `
     <!-- Avatar + name -->
@@ -958,59 +1279,99 @@ function openStudentPanel(id) {
       </div>
     </div>
 
-    <!-- Personal Information -->
-    <div class="bg-slate-50 rounded-2xl p-4 space-y-3">
-      <p class="text-base font-bold text-slate-900 uppercase tracking-wider">Personal Information</p>
-      <div class="grid grid-cols-2 gap-4">
-        ${panelInfoRow("Phone", s.phone)}
-        ${panelInfoRow("Address", s.address || "—")}
-        ${panelInfoRow("City", s.city)}
-      </div>
+    <!-- Tab bar -->
+    <div class="flex items-center gap-4 border-b border-slate-200">
+      <button class="student-panel-tab-btn px-0.5 pb-2 text-sm font-semibold border-b-2 transition-colors" data-tab="info">Information</button>
+      <button class="student-panel-tab-btn px-0.5 pb-2 text-sm font-semibold border-b-2 transition-colors" data-tab="workflow">Checklist (${studentWorkflowPct}%)</button>
+      <button class="student-panel-tab-btn px-0.5 pb-2 text-sm font-semibold border-b-2 transition-colors" data-tab="notes">Staff Notes</button>
     </div>
 
-    <!-- Academic Information -->
-    <div class="bg-slate-50 rounded-2xl p-4 space-y-3">
-      <p class="text-base font-bold text-slate-900 uppercase tracking-wider">Academic Information</p>
-      <div class="grid grid-cols-2 gap-4">
-        <div>
-          <p class="text-sm font-semibold text-slate-400 uppercase tracking-widest mb-1">Cohort</p>
-          <select id="panel-cohort" class="w-full text-lg text-slate-700 bg-white border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#F05A22] focus:border-transparent cursor-pointer">
-            ${cohortFieldOptionsHtml(s.cohort)}
-          </select>
+    <!-- Information tab -->
+    <div id="panel-tab-info" class="student-panel-tab-panel space-y-4">
+
+      <!-- Personal -->
+      <div class="bg-slate-50 rounded-2xl p-4 space-y-3">
+        <p class="text-base font-bold text-slate-900 uppercase tracking-wider">Personal</p>
+        <div class="grid grid-cols-2 gap-4">
+          ${panelInfoRow("Phone", s.phone)}
+          ${panelInfoRow("Address", s.address || "—")}
+          ${panelInfoRow("City", s.city)}
         </div>
-        ${fieldworkSelect("Concentration", s.concentration, ["Behavioral Health", "Health Care"], "panel-concentration")}
-        ${fieldworkSelect("Program Format", s.format, ["Hybrid", "Online"], "panel-format")}
-        ${fieldworkSelect("Enrollment", s.enrollment, ["Full-Time", "Part-Time"], "panel-enrollment")}
+      </div>
+
+      <!-- Academic -->
+      <div class="bg-slate-50 rounded-2xl p-4 space-y-3">
+        <p class="text-base font-bold text-slate-900 uppercase tracking-wider">Academic</p>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <p class="text-sm font-semibold text-slate-400 uppercase tracking-widest mb-1">Cohort</p>
+            <select id="panel-cohort" class="w-full text-lg text-slate-700 bg-white border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#F05A22] focus:border-transparent cursor-pointer">
+              ${cohortFieldOptionsHtml(s.cohort)}
+            </select>
+          </div>
+          ${fieldworkSelect("Concentration", s.concentration, ["Behavioral Health", "Health Care"], "panel-concentration")}
+          ${fieldworkSelect("Program Format", s.format, ["Hybrid", "Online"], "panel-format")}
+          ${fieldworkSelect("Enrollment", s.enrollment, ["Full-Time", "Part-Time"], "panel-enrollment")}
+        </div>
+      </div>
+
+      <!-- Fieldwork -->
+      <div class="bg-slate-50 rounded-2xl p-4 space-y-3">
+        <p class="text-base font-bold text-slate-900 uppercase tracking-wider">Fieldwork</p>
+        <div class="grid grid-cols-2 gap-4">
+          ${fieldworkSelect("City and County", `${s.city}, ${s.county}`,
+              [...new Set(agencies.flatMap(a => a.locations.map(l => `${l.city}, ${l.county}`)))].sort(),
+              "panel-city-county")}
+          ${fieldworkSelect("Field Work Location", s.fieldAgency || "—",
+              agenciesForCounty(s.county, s.fieldAgency),
+              "panel-field-location")}
+          ${fieldworkDate("Start Date", s.fieldStart, "panel-field-start")}
+          ${fieldworkDate("End Date", s.fieldEnd, "panel-field-end")}
+          ${fieldworkSelect("Field Instructor", s.fieldInstructor || "—",
+              instructorForAgency(s.fieldAgency, s.fieldInstructor),
+              "panel-field-instructor")}
+          ${fieldworkSelect("Field Liaison", s.liaison,
+              coordinatorNames(), "panel-liaison")}
+          ${fieldworkSelect("Placement Status", s.status,
+              ["Active","Pending","Completed"], "panel-status")}
+          <div id="panel-instructor-other-wrap" class="col-span-2 hidden">
+            <p class="text-sm font-semibold text-slate-400 uppercase tracking-widest mb-1">Field Instructor Name</p>
+            <input type="text" id="panel-instructor-other-input" placeholder="Enter field instructor name"
+              class="w-full text-lg text-slate-700 bg-white border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#F05A22] focus:border-transparent" />
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Fieldwork Information -->
-    <div class="bg-slate-50 rounded-2xl p-4 space-y-3">
-      <p class="text-base font-bold text-slate-900 uppercase tracking-wider">Fieldwork Information</p>
-      <div class="grid grid-cols-2 gap-4">
-        ${fieldworkSelect("City and County", `${s.city}, ${s.county}`,
-            [...new Set(agencies.flatMap(a => a.locations.map(l => `${l.city}, ${l.county}`)))].sort(),
-            "panel-city-county")}
-        ${fieldworkSelect("Field Work Location", s.fieldAgency || "—",
-            agenciesForCounty(s.county, s.fieldAgency),
-            "panel-field-location")}
-        ${fieldworkDate("Start Date", s.fieldStart, "panel-field-start")}
-        ${fieldworkDate("End Date", s.fieldEnd, "panel-field-end")}
-        ${fieldworkSelect("Field Instructor", s.fieldInstructor || "—",
-            instructorForAgency(s.fieldAgency, s.fieldInstructor),
-            "panel-field-instructor")}
-        ${fieldworkSelect("Field Liaison", s.liaison,
-            ["Annette","Halide","Vanessa"], "panel-liaison")}
-        ${fieldworkSelect("Placement Status", s.status,
-            ["Active","Pending","Completed"], "panel-status")}
-        <div id="panel-instructor-other-wrap" class="col-span-2 hidden">
-          <p class="text-sm font-semibold text-slate-400 uppercase tracking-widest mb-1">Field Instructor Name</p>
-          <input type="text" id="panel-instructor-other-input" placeholder="Enter field instructor name"
-            class="w-full text-lg text-slate-700 bg-white border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#F05A22] focus:border-transparent" />
+    <!-- Workflow tab -->
+    <div id="panel-tab-workflow" class="student-panel-tab-panel hidden">
+      <div id="panel-workflow-section">
+        ${workflowSectionHtml(STUDENT_WORKFLOW_PHASES, studentWorkflowStore[s.id] || {})}
+      </div>
+    </div>
+
+    <!-- Staff Notes tab -->
+    <div id="panel-tab-notes" class="student-panel-tab-panel hidden space-y-4">
+      <div id="panel-notes-thread" class="space-y-3"></div>
+      <div class="pt-4 border-t border-slate-100 space-y-2">
+        <textarea id="panel-new-note" rows="2"
+          class="w-full text-sm border border-slate-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent resize-none bg-white"
+          placeholder="Add a note about this student…"></textarea>
+        <div class="flex items-center justify-between">
+          <p class="text-xs text-slate-400" id="panel-save-status"></p>
+          <button id="panel-add-note" class="px-4 py-2 text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 rounded-lg shadow-sm transition-colors">
+            Add Note
+          </button>
         </div>
       </div>
     </div>
   `;
+
+  document.querySelectorAll(".student-panel-tab-btn").forEach(btn => {
+    btn.addEventListener("click", () => switchStudentPanelTab(btn.dataset.tab));
+  });
+  switchStudentPanelTab("info");
+  wireWorkflowDials(document.getElementById("panel-workflow-section"));
 
   // Persists one or more fieldwork fields for the currently-open student and
   // refreshes every view that shows that data, so edits made here actually
@@ -1022,6 +1383,7 @@ function openStudentPanel(id) {
     renderStats();
     renderPlacementBreakdown();
     if (window.renderLiaisonBreakdown) window.renderLiaisonBreakdown();
+    if (window.renderCoordinatorsTab) window.renderCoordinatorsTab();
     const statusEl = document.getElementById("panel-save-status");
     if (statusEl) {
       statusEl.textContent = "Saved ✓";
@@ -1137,6 +1499,48 @@ function openStudentPanel(id) {
   document.getElementById("panel-save-status").textContent = "";
   renderNotesThread(id);
 
+  // panel-add-note/panel-notes-thread now live inside the JS-regenerated
+  // "notes" tab content, so they're re-wired fresh on every open rather than
+  // once in wireEvents() — the old elements (and their listeners) get thrown
+  // away each time this innerHTML is replaced.
+  document.getElementById("panel-add-note").addEventListener("click", () => {
+    if (activeStudentId === null) return;
+    const ta = document.getElementById("panel-new-note");
+    addStudentNote(activeStudentId, ta.value);
+    ta.value = "";
+    const status = document.getElementById("panel-save-status");
+    status.textContent = "Saved ✓";
+    setTimeout(() => { if (document.getElementById("panel-save-status")) status.textContent = ""; }, 2000);
+  });
+
+  document.getElementById("panel-notes-thread").addEventListener("click", async e => {
+    const pinBtn = e.target.closest(".pin-toggle-btn");
+    if (pinBtn) {
+      togglePinNote(activeStudentId, Number(pinBtn.dataset.noteId));
+      return;
+    }
+    const deleteBtn = e.target.closest(".note-delete-btn");
+    if (deleteBtn) {
+      const ok = await confirmDialog("Are you sure you want to delete this note?", { title: "Delete note", confirmLabel: "Delete", danger: true });
+      if (!ok) return;
+      deleteStudentNote(activeStudentId, Number(deleteBtn.dataset.noteId));
+      return;
+    }
+    const toggleBtn = e.target.closest(".reply-toggle-btn");
+    if (toggleBtn) {
+      const form = document.querySelector(`.reply-form[data-note-id="${toggleBtn.dataset.noteId}"]`);
+      form.classList.toggle("hidden");
+      if (!form.classList.contains("hidden")) form.querySelector("textarea").focus();
+      return;
+    }
+    const submitBtn = e.target.closest(".reply-submit-btn");
+    if (submitBtn) {
+      const noteId = Number(submitBtn.dataset.noteId);
+      const textarea = submitBtn.closest(".reply-form").querySelector("textarea");
+      addNoteReply(activeStudentId, noteId, textarea.value);
+    }
+  });
+
   // Show panel
   document.getElementById("panel-backdrop").classList.remove("hidden");
   document.getElementById("student-panel").classList.remove("hidden");
@@ -1157,6 +1561,54 @@ function closeModal(id) { document.getElementById(id).classList.add("hidden"); }
 document.querySelectorAll("[data-close-modal]").forEach(el => {
   el.addEventListener("click", () => closeModal(el.dataset.closeModal));
 });
+
+// Promise-based replacement for window.confirm() — matches the app's look
+// instead of the browser's native "localhost says" dialog. Resolves true if
+// the user confirms, false if they cancel (backdrop click or Cancel button).
+let confirmDialogResolve = null;
+
+function confirmDialog(message, { title = "Are you sure?", confirmLabel = "Confirm", danger = false } = {}) {
+  return new Promise(resolve => {
+    confirmDialogResolve = resolve;
+    document.getElementById("confirm-modal-title").textContent = title;
+    document.getElementById("confirm-modal-message").textContent = message;
+    const btn = document.getElementById("confirm-modal-confirm-btn");
+    btn.textContent = confirmLabel;
+    btn.className = `px-4 py-2 text-sm font-medium text-white rounded-lg shadow-sm ${
+      danger ? "bg-red-500 hover:bg-red-600" : IS_ADMIN ? "bg-[#F05A22] hover:bg-[#C44A1C]" : "bg-teal-600 hover:bg-teal-700"
+    }`;
+    openModal("confirm-modal");
+  });
+}
+
+function resolveConfirmDialog(value) {
+  closeModal("confirm-modal");
+  if (!confirmDialogResolve) return;
+  const resolve = confirmDialogResolve;
+  confirmDialogResolve = null;
+  resolve(value);
+}
+
+// Promise-based replacement for window.alert() — same reasoning as above.
+let alertDialogResolve = null;
+
+function alertDialog(message, { title = "Heads up" } = {}) {
+  return new Promise(resolve => {
+    alertDialogResolve = resolve;
+    document.getElementById("alert-modal-title").textContent = title;
+    document.getElementById("alert-modal-message").textContent = message;
+    document.getElementById("alert-modal-ok-btn").className = `px-4 py-2 text-sm font-medium text-white rounded-lg shadow-sm ${IS_ADMIN ? "bg-[#F05A22] hover:bg-[#C44A1C]" : "bg-teal-600 hover:bg-teal-700"}`;
+    openModal("alert-modal");
+  });
+}
+
+function resolveAlertDialog() {
+  closeModal("alert-modal");
+  if (!alertDialogResolve) return;
+  const resolve = alertDialogResolve;
+  alertDialogResolve = null;
+  resolve();
+}
 
 // Promise-based replacement for window.prompt() — every "+ Add New …" option
 // (cohort, semester, city) used the browser's native prompt, which shows the
@@ -1272,6 +1724,7 @@ function renderNoteEntry(note) {
         <div class="flex items-center gap-2 flex-shrink-0">
           <p class="text-[10px] text-slate-400 whitespace-nowrap">${escapeHtml(note.date)}</p>
           <button class="pin-toggle-btn text-sm leading-none transition-opacity ${pinned ? "opacity-100" : "opacity-30 hover:opacity-70"}" data-note-id="${note.id}" title="${pinned ? "Unpin note" : "Pin note"}" aria-label="${pinned ? "Unpin note" : "Pin note"}">📌</button>
+          <button class="note-delete-btn text-sm font-bold leading-none text-slate-400 hover:text-red-500" data-note-id="${note.id}" title="Delete note" aria-label="Delete note">×</button>
         </div>
       </div>
       <p class="text-sm text-slate-600 leading-snug whitespace-pre-wrap">${escapeHtml(note.text)}</p>
@@ -1343,365 +1796,13 @@ function togglePinNote(studentId, noteId) {
   renderNotesThread(studentId);
 }
 
-// ── Checklist ────────────────────────────────────────────────────────────────
-const CHECKLIST_KEY = "fepms-checklist";
-// Field education coordinators, kept separate from staffProfile — staffProfile
-// is "whoever is logged in right now" and reads "System Administrator" on
-// admin-dashboard.html, which would otherwise make the actual coordinator(s)
-// unassignable from the admin side. This list is what both dashboards' Task
-// Assigned To dropdowns pull from, alongside the field liaisons.
-const COORDINATORS = ["Dr. Frances Cooper"];
-
-// Computed lazily (not at module load) since staffProfile is declared later in this file.
-function checklistAssignees() {
-  return [...COORDINATORS, ...staffProfile.liaisons];
-}
-
-// Who can appear in "Assigned From" — same pool, plus whoever is currently
-// logged in (so "System Administrator" is pickable when assigning from the
-// admin dashboard, even though admins aren't a Task Assigned To option).
-function checklistAssignors() {
-  return [...new Set([staffProfile.name, ...checklistAssignees()])];
-}
-const CHECKLIST_DESCRIPTION_OPTIONS = ["Placement Status", "Agency Contract", "Enrollment Change", "Concentration Change", "Other"];
-const CHECKLIST_REMARKS = ["No Remarks", "On Track", "Needs Follow-Up", "At Risk", "Waiting on Response", "Resolved"];
-const CHECKLIST_REMARKS_STYLES = {
-  "No Remarks":          "bg-slate-100 text-slate-500",
-  "On Track":            "bg-emerald-50 text-emerald-700",
-  "Needs Follow-Up":     "bg-amber-50 text-amber-700",
-  "At Risk":             "bg-red-50 text-red-700",
-  "Waiting on Response": "bg-indigo-50 text-indigo-700",
-  "Resolved":            "bg-teal-50 text-teal-700",
-};
-
-function loadChecklist() {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(CHECKLIST_KEY));
-    return Array.isArray(parsed) ? parsed : [];
-  } catch (e) {
-    return [];
-  }
-}
-
-let checklist = loadChecklist();
-let checklistIdCounter = checklist.reduce((max, c) => Math.max(max, Number(c.id) || 0), 0) + 1;
-
-function saveChecklist() {
-  localStorage.setItem(CHECKLIST_KEY, JSON.stringify(checklist));
-}
-
-// ── Task Activity Log ────────────────────────────────────────────────────────
-// A running record of every change made to a checklist task — who touched
-// what and when — surfaced in the notification bell so anyone can see task
-// progress without having to already know what changed.
-const TASK_ACTIVITY_KEY = "fepms-task-activity";
-
-function loadTaskActivity() {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(TASK_ACTIVITY_KEY));
-    return Array.isArray(parsed) ? parsed : [];
-  } catch (e) {
-    return [];
-  }
-}
-
-let taskActivity = loadTaskActivity();
-
-function logTaskActivity(itemLabel, message) {
-  taskActivity.unshift({
-    id: Date.now() + Math.random(),
-    item: itemLabel || "Untitled task",
-    message,
-    date: todayLabel(),
-    by: staffProfile.name,
-  });
-  taskActivity = taskActivity.slice(0, 50);
-  localStorage.setItem(TASK_ACTIVITY_KEY, JSON.stringify(taskActivity));
-}
-
-// Turns a partial checklist "changes" object into a human-readable summary —
-// changes usually arrive one field at a time (inline table edits), but this
-// handles several at once too (e.g. the Add Task form).
-function describeChecklistChange(changes) {
-  const parts = [];
-  if ("item" in changes) parts.push(`renamed to "${changes.item}"`);
-  if ("description" in changes) parts.push(`category set to ${changes.description || "—"}`);
-  if ("descriptionOther" in changes) parts.push("description updated");
-  if ("assignedTo" in changes) parts.push(`assigned to ${changes.assignedTo || "—"}`);
-  if ("assignedFrom" in changes) parts.push(`assigned by ${changes.assignedFrom || "—"}`);
-  if ("deadline" in changes) parts.push(`deadline set to ${changes.deadline || "—"}`);
-  if ("remarks" in changes) parts.push(`marked ${changes.remarks}`);
-  if ("done" in changes) parts.push(changes.done ? "marked complete" : "marked incomplete");
-  return parts.join(", ") || "updated";
-}
-
-function addChecklistItem(data = {}) {
-  const item = {
-    id: checklistIdCounter++,
-    item: data.item || "",
-    description: data.description || "",
-    descriptionOther: data.descriptionOther || "",
-    assignedTo: data.assignedTo || "",
-    assignedFrom: data.assignedFrom || "",
-    deadline: data.deadline || "",
-    remarks: data.remarks || "No Remarks",
-    done: !!data.done,
-  };
-  checklist.push(item);
-  saveChecklist();
-  logTaskActivity(item.item, `created${item.assignedTo ? ` and assigned to ${item.assignedTo}` : ""}`);
-  renderChecklist();
-}
-
-function updateChecklistItem(id, changes) {
-  const row = checklist.find(c => c.id === id);
-  if (!row) return;
-  Object.assign(row, changes);
-  saveChecklist();
-  logTaskActivity(row.item, describeChecklistChange(changes));
-}
-
-const CHECKLIST_TRASH_KEY = "fepms-checklist-trash";
-
-function loadChecklistTrash() {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(CHECKLIST_TRASH_KEY));
-    return Array.isArray(parsed) ? parsed : [];
-  } catch (e) {
-    return [];
-  }
-}
-
-let checklistTrash = loadChecklistTrash();
-
-function saveChecklistTrash() {
-  localStorage.setItem(CHECKLIST_TRASH_KEY, JSON.stringify(checklistTrash));
-}
-
-function deleteChecklistItem(id) {
-  const item = checklist.find(c => c.id === id);
-  if (item) {
-    checklistTrash.unshift({ ...item, deletedAt: todayLabel() });
-    logTaskActivity(item.item, "moved to trash");
-  }
-  checklist = checklist.filter(c => c.id !== id);
-  saveChecklist();
-  saveChecklistTrash();
-  renderChecklist();
-}
-
-function restoreChecklistItem(id) {
-  const item = checklistTrash.find(c => c.id === id);
-  if (!item) return;
-  const { deletedAt, ...restored } = item;
-  checklist.push(restored);
-  checklistTrash = checklistTrash.filter(c => c.id !== id);
-  saveChecklist();
-  saveChecklistTrash();
-  logTaskActivity(restored.item, "restored from trash");
-  renderChecklist();
-  renderChecklistTrash();
-}
-
-function renderChecklist() {
-  const tbody = document.getElementById("checklist-body");
-  const emptyEl = document.getElementById("checklist-empty");
-  if (!tbody) return;
-
-  if (!checklist.length) {
-    tbody.innerHTML = "";
-    if (emptyEl) emptyEl.classList.remove("hidden");
-    return;
-  }
-  if (emptyEl) emptyEl.classList.add("hidden");
-
-  tbody.innerHTML = checklist.map(c => {
-    const remarksStyle = CHECKLIST_REMARKS_STYLES[c.remarks] || CHECKLIST_REMARKS_STYLES["No Remarks"];
-    return `
-    <tr class="border-b border-slate-50 last:border-0" data-id="${c.id}">
-      <td class="td-cell">
-        <input type="text" data-field="item" value="${escapeHtml(c.item)}" placeholder="Task name"
-          class="checklist-input w-full min-w-[140px] text-sm text-slate-700 bg-transparent border border-transparent hover:border-slate-200 focus:border-slate-300 rounded-lg px-2 py-1.5 focus:outline-none" />
-      </td>
-      <td class="td-cell">
-        <select data-field="description" class="checklist-input w-full min-w-[160px] text-sm text-slate-700 bg-transparent border border-transparent hover:border-slate-200 focus:border-slate-300 rounded-lg px-2 py-1.5 focus:outline-none cursor-pointer">
-          <option value="" ${!c.description ? "selected" : ""}>—</option>
-          ${CHECKLIST_DESCRIPTION_OPTIONS.map(o => `<option value="${o}" ${o === c.description ? "selected" : ""}>${o}</option>`).join("")}
-        </select>
-        <input type="text" data-field="descriptionOther" value="${escapeHtml(c.descriptionOther || "")}" placeholder="Describe…"
-          class="checklist-input checklist-description-other w-full min-w-[160px] mt-1 text-sm text-slate-600 bg-transparent border border-transparent hover:border-slate-200 focus:border-slate-300 rounded-lg px-2 py-1.5 focus:outline-none ${c.description === "Other" ? "" : "hidden"}" />
-      </td>
-      <td class="td-cell">
-        <select data-field="assignedTo" class="checklist-input text-sm text-slate-700 bg-transparent border border-transparent hover:border-slate-200 focus:border-slate-300 rounded-lg px-2 py-1.5 focus:outline-none cursor-pointer">
-          <option value="" ${!c.assignedTo ? "selected" : ""}>—</option>
-          ${checklistAssignees().map(name => `<option value="${name}" ${name === c.assignedTo ? "selected" : ""}>${name}</option>`).join("")}
-        </select>
-      </td>
-      <td class="td-cell">
-        <select data-field="assignedFrom" class="checklist-input text-sm text-slate-700 bg-transparent border border-transparent hover:border-slate-200 focus:border-slate-300 rounded-lg px-2 py-1.5 focus:outline-none cursor-pointer">
-          <option value="" ${!c.assignedFrom ? "selected" : ""}>—</option>
-          ${checklistAssignors().map(name => `<option value="${name}" ${name === c.assignedFrom ? "selected" : ""}>${name}</option>`).join("")}
-        </select>
-      </td>
-      <td class="td-cell">
-        <input type="date" data-field="deadline" value="${c.deadline || ""}"
-          class="checklist-input text-sm text-slate-700 bg-transparent border border-transparent hover:border-slate-200 focus:border-slate-300 rounded-lg px-2 py-1.5 focus:outline-none cursor-pointer" />
-      </td>
-      <td class="td-cell">
-        <select data-field="remarks" class="checklist-input text-xs font-medium rounded-full px-2.5 py-1.5 border-0 cursor-pointer ${remarksStyle}">
-          ${CHECKLIST_REMARKS.map(r => `<option value="${r}" ${r === c.remarks ? "selected" : ""}>${r}</option>`).join("")}
-        </select>
-      </td>
-      <td class="td-cell text-center">
-        <button class="checklist-status-btn text-xl leading-none" data-id="${c.id}" title="${c.done ? "Mark incomplete" : "Mark complete"}">
-          ${c.done ? '<span class="text-emerald-500">✓</span>' : '<span class="text-red-500">✗</span>'}
-        </button>
-      </td>
-      <td class="td-cell text-right">
-        <button class="checklist-delete-btn text-slate-300 hover:text-red-500 transition-colors" data-id="${c.id}" title="Remove item">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-        </button>
-      </td>
-    </tr>`;
-  }).join("");
-}
-
-function wireChecklistEvents() {
-  // Deliberately avoid a full renderChecklist() here — rebuilding the whole
-  // table on every field edit would tear down and recreate every other row's
-  // inputs mid-edit, breaking tab-key navigation and losing focus. Only the
-  // one thing that visually depends on the new value (the remarks pill color)
-  // gets updated directly; every other field already shows what the user typed.
-  document.getElementById("checklist-body").addEventListener("change", e => {
-    const row = e.target.closest("tr");
-    const field = e.target.dataset.field;
-    if (!row || !field) return;
-    updateChecklistItem(Number(row.dataset.id), { [field]: e.target.value });
-    if (field === "remarks") {
-      const style = CHECKLIST_REMARKS_STYLES[e.target.value] || CHECKLIST_REMARKS_STYLES["No Remarks"];
-      e.target.className = `checklist-input text-xs font-medium rounded-full px-2.5 py-1.5 border-0 cursor-pointer ${style}`;
-    }
-    if (field === "description") {
-      const otherInput = row.querySelector(".checklist-description-other");
-      if (otherInput) otherInput.classList.toggle("hidden", e.target.value !== "Other");
-    }
-  });
-
-  document.getElementById("checklist-body").addEventListener("click", e => {
-    const statusBtn = e.target.closest(".checklist-status-btn");
-    if (statusBtn) {
-      const row = checklist.find(c => c.id === Number(statusBtn.dataset.id));
-      if (row) {
-        updateChecklistItem(row.id, { done: !row.done });
-        statusBtn.innerHTML = row.done ? '<span class="text-emerald-500">✓</span>' : '<span class="text-red-500">✗</span>';
-        statusBtn.title = row.done ? "Mark incomplete" : "Mark complete";
-      }
-      return;
-    }
-    const delBtn = e.target.closest(".checklist-delete-btn");
-    if (delBtn) deleteChecklistItem(Number(delBtn.dataset.id));
-  });
-}
-
-function renderChecklistTrash() {
-  const tbody = document.getElementById("checklist-trash-body");
-  const emptyEl = document.getElementById("checklist-trash-empty");
-  if (!tbody) return;
-
-  if (!checklistTrash.length) {
-    tbody.innerHTML = "";
-    if (emptyEl) emptyEl.classList.remove("hidden");
-    return;
-  }
-  if (emptyEl) emptyEl.classList.add("hidden");
-
-  tbody.innerHTML = checklistTrash.map(c => {
-    const remarksStyle = CHECKLIST_REMARKS_STYLES[c.remarks] || CHECKLIST_REMARKS_STYLES["No Remarks"];
-    const descLabel = c.description === "Other" ? (c.descriptionOther || "Other") : (c.description || "—");
-    return `
-    <tr class="border-b border-slate-50 last:border-0" data-id="${c.id}">
-      <td class="td-cell text-slate-700">${escapeHtml(c.item) || "—"}</td>
-      <td class="td-cell text-slate-600">${escapeHtml(descLabel)}</td>
-      <td class="td-cell text-slate-600">${escapeHtml(c.assignedTo) || "—"}</td>
-      <td class="td-cell text-slate-600">${escapeHtml(c.assignedFrom) || "—"}</td>
-      <td class="td-cell text-slate-600">${c.deadline || "—"}</td>
-      <td class="td-cell"><span class="text-sm font-medium rounded-full px-3 py-1.5 ${remarksStyle}">${escapeHtml(c.remarks)}</span></td>
-      <td class="td-cell text-center">${c.done ? '<span class="text-emerald-500 text-2xl">✓</span>' : '<span class="text-red-500 text-2xl">✗</span>'}</td>
-      <td class="td-cell text-slate-400 text-sm">${escapeHtml(c.deletedAt || "—")}</td>
-      <td class="td-cell text-right">
-        <button class="checklist-restore-btn text-sm font-semibold text-teal-600 hover:text-teal-700" data-id="${c.id}">Restore</button>
-      </td>
-    </tr>`;
-  }).join("");
-}
-
-function openChecklistTrash() {
-  renderChecklistTrash();
-  document.getElementById("checklist-trash-modal").classList.remove("hidden");
-}
-
-function closeChecklistTrash() {
-  document.getElementById("checklist-trash-modal").classList.add("hidden");
-}
-
-function wireChecklistTrashEvents() {
-  document.getElementById("checklist-trash-btn").addEventListener("click", openChecklistTrash);
-  document.getElementById("checklist-trash-body").addEventListener("click", e => {
-    const btn = e.target.closest(".checklist-restore-btn");
-    if (btn) restoreChecklistItem(Number(btn.dataset.id));
-  });
-}
-
-// "Add Item" opens a dedicated form instead of dropping a blank inline row —
-// the new task only appears in the table once the form is submitted.
-function openChecklistTaskModal() {
-  document.getElementById("checklist-task-form").reset();
-  document.getElementById("ct-description-other").classList.add("hidden");
-
-  const assignedSelect = document.getElementById("ct-assigned");
-  assignedSelect.innerHTML = `<option value="">—</option>` +
-    checklistAssignees().map(name => `<option value="${name}">${name}</option>`).join("");
-
-  // Defaults to whoever's currently logged in — still a plain dropdown, so
-  // it's easy to change if someone's entering a task on another coordinator's
-  // behalf.
-  const assignedFromSelect = document.getElementById("ct-assigned-from");
-  assignedFromSelect.innerHTML = checklistAssignors()
-    .map(name => `<option value="${name}" ${name === staffProfile.name ? "selected" : ""}>${name}</option>`).join("");
-
-  const remarksSelect = document.getElementById("ct-remarks");
-  remarksSelect.innerHTML = CHECKLIST_REMARKS.map(r =>
-    `<option value="${r}" ${r === "No Remarks" ? "selected" : ""}>${r}</option>`
-  ).join("");
-
-  document.getElementById("checklist-task-modal").classList.remove("hidden");
-}
-
-function closeChecklistTaskModal() {
-  document.getElementById("checklist-task-modal").classList.add("hidden");
-}
-
-function wireChecklistTaskModalEvents() {
-  document.getElementById("checklist-add-btn").addEventListener("click", openChecklistTaskModal);
-
-  document.getElementById("ct-description").addEventListener("change", e => {
-    document.getElementById("ct-description-other").classList.toggle("hidden", e.target.value !== "Other");
-  });
-
-  document.getElementById("checklist-task-form").addEventListener("submit", e => {
-    e.preventDefault();
-    addChecklistItem({
-      item: document.getElementById("ct-item").value.trim(),
-      description: document.getElementById("ct-description").value,
-      descriptionOther: document.getElementById("ct-description-other").value.trim(),
-      assignedTo: document.getElementById("ct-assigned").value,
-      assignedFrom: document.getElementById("ct-assigned-from").value,
-      deadline: document.getElementById("ct-deadline").value,
-      remarks: document.getElementById("ct-remarks").value,
-      done: document.getElementById("ct-done").checked,
-    });
-    closeChecklistTaskModal();
-  });
+function deleteStudentNote(studentId, noteId) {
+  const s = roster.find(x => x.id === studentId);
+  if (!s) return;
+  s.notes = s.notes.filter(n => n.id !== noteId);
+  persistNotes();
+  renderNotesThread(studentId);
+  renderRoster();
 }
 
 // ── Field Applications (Forms tab) ───────────────────────────────────────────
@@ -2040,7 +2141,7 @@ function wireFormsEvents() {
   const listEl = document.getElementById("forms-list");
   if (!listEl) return;
 
-  listEl.addEventListener("click", e => {
+  listEl.addEventListener("click", async e => {
     const apps = loadFieldApplications();
 
     const addRosterBtn = e.target.closest(".forms-add-roster-btn");
@@ -2067,7 +2168,8 @@ function wireFormsEvents() {
 
     const deleteBtn = e.target.closest(".forms-delete-btn");
     if (deleteBtn) {
-      if (!confirm("Delete this submission? Make sure you've transferred its data first.")) return;
+      const ok = await confirmDialog("Delete this submission? Make sure you've transferred its data first.", { title: "Delete submission", confirmLabel: "Delete", danger: true });
+      if (!ok) return;
       saveFieldApplications(apps.filter(a => a.id !== deleteBtn.dataset.appId));
       renderFormsList();
     }
@@ -2236,7 +2338,7 @@ function wireAgencyFormsEvents() {
   const listEl = document.getElementById("agency-forms-list");
   if (!listEl) return;
 
-  listEl.addEventListener("click", e => {
+  listEl.addEventListener("click", async e => {
     const subs = loadAgencyInterviews();
 
     const viewBtn = e.target.closest(".agency-forms-view-btn");
@@ -2256,7 +2358,8 @@ function wireAgencyFormsEvents() {
 
     const deleteBtn = e.target.closest(".agency-forms-delete-btn");
     if (deleteBtn) {
-      if (!confirm("Delete this submission? Make sure you've transferred its data first.")) return;
+      const ok = await confirmDialog("Delete this submission? Make sure you've transferred its data first.", { title: "Delete submission", confirmLabel: "Delete", danger: true });
+      if (!ok) return;
       saveAgencyInterviews(subs.filter(s => s.id !== deleteBtn.dataset.subId));
       renderAgencyFormsList();
     }
@@ -2384,6 +2487,7 @@ function renderAgencies() {
     }).join("");
   }
   count.textContent = `Showing ${filtered.length} of ${agencies.length} agencies`;
+  renderAgencyContractStatus();
 
   document.querySelectorAll(".agency-card-open").forEach(card => {
     card.addEventListener("click", () => openAgencyPanel(Number(card.dataset.id)));
@@ -2397,11 +2501,12 @@ function renderAgencies() {
       });
     });
     document.querySelectorAll(".agency-delete-btn").forEach(btn => {
-      btn.addEventListener("click", e => {
+      btn.addEventListener("click", async e => {
         e.stopPropagation();
         const a = agencies.find(x => x.id === Number(btn.dataset.id));
         if (!a) return;
-        if (!confirm(`Delete ${a.name}? This cannot be undone.`)) return;
+        const ok = await confirmDialog(`Delete ${a.name}? This cannot be undone.`, { title: "Delete agency", confirmLabel: "Delete", danger: true });
+        if (!ok) return;
         deleteAgency(a.id);
         renderAgencies();
       });
@@ -2417,7 +2522,7 @@ function renderAgencies() {
 // staff+admin editable) Location Detail modal to set placement availability.
 let activeAgencyId = null;
 let activeAgencyTab = "contact";
-const AGENCY_TABS = ["contact", "locations", "students"];
+const AGENCY_TABS = ["contact", "locations", "students", "workflow"];
 
 function switchAgencyTab(tab) {
   activeAgencyTab = tab;
@@ -2441,8 +2546,8 @@ function switchAgencyTab(tab) {
 function agencyLocationsTabHtml(a) {
   const addBtnRow = IS_ADMIN ? `
     <div class="flex items-center justify-end py-3 border-b border-slate-200">
-      <button type="button" id="agency-add-location-btn" class="flex items-center gap-1 text-xs font-medium text-[#F05A22] hover:text-[#C44A1C]">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+      <button type="button" id="agency-add-location-btn" class="flex items-center gap-1.5 text-lg font-medium text-[#F05A22] hover:text-[#C44A1C]">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
         Add Location
       </button>
     </div>` : "";
@@ -2452,16 +2557,16 @@ function agencyLocationsTabHtml(a) {
       ? placements.map(p => `${escapeHtml(p.semester)} (${p.count})`).join(" · ")
       : "No placements scheduled yet";
     return `
-    <div class="agency-location-row flex items-start gap-2 py-3 px-2 -mx-2 rounded-lg cursor-pointer hover:bg-white transition-colors" data-index="${i}">
-      <svg class="w-4 h-4 flex-shrink-0 mt-1 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+    <div class="agency-location-row flex items-start gap-3 py-4 px-2 -mx-2 rounded-lg cursor-pointer hover:bg-white transition-colors" data-index="${i}">
+      <svg class="w-6 h-6 flex-shrink-0 mt-1 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
       <div class="flex-1 min-w-0">
-        <p class="text-lg text-slate-700 leading-snug">${escapeHtml(l.address)}${l.zip ? " " + escapeHtml(l.zip) : ""}<br/><span class="text-sm text-slate-400">${escapeHtml(l.city)}, ${escapeHtml(l.county)}</span></p>
-        <p class="text-xs font-semibold ${placements.length ? "text-emerald-600" : "text-slate-400"} mt-1">${summary}</p>
+        <p class="text-2xl text-slate-700 leading-snug">${escapeHtml(l.address)}${l.zip ? " " + escapeHtml(l.zip) : ""}<br/><span class="text-lg text-slate-400">${escapeHtml(l.city)}, ${escapeHtml(l.county)}</span></p>
+        <p class="text-base font-semibold ${placements.length ? "text-emerald-600" : "text-slate-400"} mt-1">${summary}</p>
       </div>
-      <svg class="w-4 h-4 flex-shrink-0 mt-2 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      <svg class="w-5 h-5 flex-shrink-0 mt-2 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
     </div>`;
   }).join(`<div class="border-t border-slate-100"></div>`);
-  return addBtnRow + (rows || `<p class="text-sm text-slate-400 text-center py-6">No locations yet.</p>`);
+  return addBtnRow + (rows || `<p class="text-lg text-slate-400 text-center py-6">No locations yet.</p>`);
 }
 
 function wireAgencyLocationRows(agencyId) {
@@ -2492,29 +2597,29 @@ function renderAgencyLocationsTab(agencyId) {
 function agencyStudentsTabHtml(a) {
   const students = roster.filter(s => s.fieldAgency === a.name);
   if (!students.length) {
-    return `<p class="text-sm text-slate-400 text-center py-6">No students placed at this agency yet.</p>`;
+    return `<p class="text-lg text-slate-400 text-center py-6">No students placed at this agency yet.</p>`;
   }
   const rows = students.map(s => {
     const loc = a.locations.find(l => l.city === s.city && l.county === s.county) ||
                 a.locations.find(l => l.county === s.county);
     const locationText = loc ? `${loc.address}, ${loc.city}` : "—";
     return `
-    <div class="agency-student-row flex items-center gap-3 py-3 px-2 -mx-2 rounded-lg cursor-pointer hover:bg-white transition-colors" data-id="${s.id}">
-      <div class="w-9 h-9 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center text-xs font-bold flex-shrink-0">${initials(s.name)}</div>
+    <div class="agency-student-row flex items-center gap-4 py-4 px-2 -mx-2 rounded-lg cursor-pointer hover:bg-white transition-colors" data-id="${s.id}">
+      <div class="w-12 h-12 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center text-base font-bold flex-shrink-0">${initials(s.name)}</div>
       <div class="flex-1 min-w-0">
-        <p class="text-lg font-medium text-slate-800 leading-snug">${escapeHtml(s.name)}</p>
-        <div class="flex flex-wrap items-center gap-1.5 mt-1">
+        <p class="text-2xl font-medium text-slate-800 leading-snug">${escapeHtml(s.name)}</p>
+        <div class="flex flex-wrap items-center gap-1.5 mt-1.5">
           ${statusBadge(s.status)}
           ${badge(s.concentration, CONCENTRATION_STYLES[s.concentration])}
           ${badge(s.cohort, COHORT_STYLES)}
         </div>
-        <p class="text-sm text-slate-500 mt-1.5 flex items-center gap-1.5">
-          <svg class="w-3.5 h-3.5 flex-shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        <p class="text-lg text-slate-500 mt-2 flex items-center gap-1.5">
+          <svg class="w-5 h-5 flex-shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
           ${escapeHtml(locationText)}
         </p>
-        <p class="text-sm text-slate-400 mt-1">${escapeHtml(s.fieldStart) || "—"} – ${escapeHtml(s.fieldEnd) || "—"}</p>
+        <p class="text-lg text-slate-400 mt-1">${escapeHtml(s.fieldStart) || "—"} – ${escapeHtml(s.fieldEnd) || "—"}</p>
       </div>
-      <svg class="w-4 h-4 flex-shrink-0 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      <svg class="w-5 h-5 flex-shrink-0 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
     </div>`;
   }).join(`<div class="border-t border-slate-100"></div>`);
   return rows;
@@ -2541,12 +2646,15 @@ function openAgencyPanel(id, { preserveTab = false } = {}) {
   activeAgencyId = id;
 
   const cs = CONTRACT_STYLES[a.contract] || CONTRACT_STYLES.Pending;
+  const agencyWorkflowProgress = agencyWorkflowStore[a.id] || {};
+  const agencyWorkflowSummary = workflowStats(AGENCY_WORKFLOW_PHASES, agencyWorkflowProgress);
+  const agencyWorkflowPct = agencyWorkflowSummary.total ? Math.round(agencyWorkflowSummary.done / agencyWorkflowSummary.total * 100) : 0;
 
   document.getElementById("agency-panel-body").innerHTML = `
     <!-- Avatar + name -->
     <div class="flex items-center gap-4">
       <div class="w-16 h-16 rounded-2xl bg-teal-50 flex items-center justify-center flex-shrink-0">
-        <svg class="w-7 h-7 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-8 h-8 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
         </svg>
       </div>
@@ -2561,10 +2669,11 @@ function openAgencyPanel(id, { preserveTab = false } = {}) {
     </div>
 
     <!-- Tab bar -->
-    <div class="flex items-center gap-5 border-b border-slate-200">
-      <button class="agency-tab-btn px-0.5 pb-3 text-sm font-semibold border-b-2 transition-colors" data-tab="contact">Contact</button>
-      <button class="agency-tab-btn px-0.5 pb-3 text-sm font-semibold border-b-2 transition-colors" data-tab="locations">Location${a.locations.length !== 1 ? "s" : ""} (${a.locations.length})</button>
-      <button class="agency-tab-btn px-0.5 pb-3 text-sm font-semibold border-b-2 transition-colors" data-tab="students">Students (${roster.filter(s => s.fieldAgency === a.name).length})</button>
+    <div class="flex items-center gap-4 border-b border-slate-200">
+      <button class="agency-tab-btn px-0.5 pb-2 text-sm font-semibold border-b-2 transition-colors" data-tab="contact">Contact</button>
+      <button class="agency-tab-btn px-0.5 pb-2 text-sm font-semibold border-b-2 transition-colors" data-tab="locations">Location${a.locations.length !== 1 ? "s" : ""} (${a.locations.length})</button>
+      <button class="agency-tab-btn px-0.5 pb-2 text-sm font-semibold border-b-2 transition-colors" data-tab="students">Students (${roster.filter(s => s.fieldAgency === a.name).length})</button>
+      <button class="agency-tab-btn px-0.5 pb-2 text-sm font-semibold border-b-2 transition-colors" data-tab="workflow">Checklist (${agencyWorkflowPct}%)</button>
     </div>
 
     <!-- Contact tab -->
@@ -2587,8 +2696,13 @@ function openAgencyPanel(id, { preserveTab = false } = {}) {
       ${agencyStudentsTabHtml(a)}
     </div>
 
+    <!-- Workflow tab -->
+    <div id="agency-tab-workflow" class="agency-tab-panel hidden bg-slate-50 rounded-2xl p-4">
+      ${workflowSectionHtml(AGENCY_WORKFLOW_PHASES, agencyWorkflowProgress)}
+    </div>
+
     ${IS_ADMIN ? `
-    <div class="flex items-center gap-2">
+    <div class="flex items-center gap-3">
       <button id="agency-panel-edit-btn" class="flex-1 py-2 text-sm font-medium text-teal-700 bg-teal-50 hover:bg-teal-100 border border-teal-200 rounded-lg transition-colors">Edit Agency</button>
       <button id="agency-panel-delete-btn" class="flex-1 py-2 text-sm font-medium text-red-500 hover:bg-red-50 border border-red-100 rounded-lg transition-colors">Delete Agency</button>
     </div>` : ""}
@@ -2600,13 +2714,15 @@ function openAgencyPanel(id, { preserveTab = false } = {}) {
   switchAgencyTab(tabToShow);
   wireAgencyLocationRows(a.id);
   wireAgencyStudentRows();
+  wireWorkflowDials(document.getElementById("agency-tab-workflow"));
 
   if (IS_ADMIN) {
     document.getElementById("agency-panel-edit-btn").addEventListener("click", () => {
       window.openAgencyEditModal && window.openAgencyEditModal(a.id);
     });
-    document.getElementById("agency-panel-delete-btn").addEventListener("click", () => {
-      if (!confirm(`Delete ${a.name}? This cannot be undone.`)) return;
+    document.getElementById("agency-panel-delete-btn").addEventListener("click", async () => {
+      const ok = await confirmDialog(`Delete ${a.name}? This cannot be undone.`, { title: "Delete agency", confirmLabel: "Delete", danger: true });
+      if (!ok) return;
       deleteAgency(a.id);
       closeAgencyPanel();
       renderAgencies();
@@ -3064,10 +3180,11 @@ function renderTemplates() {
       btn.addEventListener("click", () => window.openTemplateEditModal && window.openTemplateEditModal(Number(btn.dataset.id)));
     });
     document.querySelectorAll(".template-delete-btn").forEach(btn => {
-      btn.addEventListener("click", () => {
+      btn.addEventListener("click", async () => {
         const t = TEMPLATES.find(x => x.id === Number(btn.dataset.id));
         if (!t) return;
-        if (!confirm(`Delete the "${t.title}" template? This cannot be undone.`)) return;
+        const ok = await confirmDialog(`Delete the "${t.title}" template? This cannot be undone.`, { title: "Delete template", confirmLabel: "Delete", danger: true });
+        if (!ok) return;
         deleteTemplate(t.id);
         renderTemplates();
       });
@@ -3115,8 +3232,8 @@ function expandTemplate(id) {
 const TAB_META = {
   home:           { heading: "Welcome, " + staffProfile.name.replace(/^(Dr\.|Mr\.|Ms\.|Mrs\.|Prof\.)\s*/i, "") },
   students:       { heading: "Student Roster" },
-  checklist:      { heading: "Checklist" },
   agencies:       { heading: "Agency Directory" },
+  coordinators:   { heading: "Coordinators" },
   communications: { heading: "Email Templates" },
   forms:          { heading: "Student Forms" },
   "agency-forms": { heading: "Agency Forms" },
@@ -3127,12 +3244,14 @@ let activeTab = "home";
 
 function switchTab(tab) {
   activeTab = tab;
-  ["home", "students", "checklist", "agencies", "communications", "forms", "agency-forms", "profile"].forEach(t => {
-    document.getElementById(`tab-${t}`).classList.toggle("hidden", t !== tab);
+  // "coordinators" only exists on admin-dashboard.html — guard each lookup
+  // since staff-app.js is shared with staff-dashboard.html, which isn't.
+  ["home", "students", "agencies", "coordinators", "communications", "forms", "agency-forms", "profile"].forEach(t => {
+    const el = document.getElementById(`tab-${t}`);
+    if (el) el.classList.toggle("hidden", t !== tab);
   });
   if (tab === "forms") renderFormsList();
   if (tab === "agency-forms") renderAgencyFormsList();
-  if (tab === "checklist") renderChecklist();
   document.querySelectorAll(".sidebar-tab").forEach(btn => {
     const isActive = btn.dataset.tab === tab;
     btn.classList.toggle("sidebar-active", isActive);
@@ -3187,10 +3306,14 @@ function wireEvents() {
     renderRoster();
   });
 
+  const placementBreakdownCohortSel = document.getElementById("placement-breakdown-cohort");
+  if (placementBreakdownCohortSel) placementBreakdownCohortSel.addEventListener("change", renderPlacementBreakdown);
+
   document.getElementById("clear-filters").addEventListener("click", resetFilters);
   document.getElementById("header-reset").addEventListener("click", () => {
     activeTab === "students" ? resetFilters() : resetAgencyFilters();
   });
+  document.getElementById("sidebar-toggle").addEventListener("click", toggleSidebar);
 
   document.getElementById("agency-search").addEventListener("input", renderAgencies);
   document.getElementById("filter-contract").addEventListener("change", renderAgencies);
@@ -3198,9 +3321,48 @@ function wireEvents() {
   document.getElementById("filter-county").addEventListener("change", renderAgencies);
   document.getElementById("clear-agency-filters").addEventListener("click", resetAgencyFilters);
 
-  wireChecklistEvents();
-  wireChecklistTrashEvents();
-  wireChecklistTaskModalEvents();
+  document.getElementById("agency-panel-body").addEventListener("keydown", e => {
+    const input = e.target.closest(".workflow-item-note-input");
+    if (!input || e.key !== "Enter" || activeAgencyId === null) return;
+    e.preventDefault();
+    const text = input.value.trim();
+    if (!text) return;
+    const { entry, index } = addWorkflowItemNote(agencyWorkflowStore, activeAgencyId, input.dataset.itemId, text);
+    saveAgencyWorkflowStore();
+    const list = input.closest(".workflow-item-note-wrap").querySelector(".workflow-item-notes");
+    list.insertAdjacentHTML("beforeend", workflowNoteEntryHtml(entry, index));
+    input.value = "";
+  });
+
+  document.getElementById("agency-panel-body").addEventListener("click", async e => {
+    const delBtn = e.target.closest(".workflow-item-note-delete");
+    if (!delBtn || activeAgencyId === null) return;
+    const ok = await confirmDialog("Are you sure you want to delete this note?", { title: "Delete note", confirmLabel: "Delete", danger: true });
+    if (!ok) return;
+    const entryEl = delBtn.closest(".workflow-item-note-entry");
+    const list = delBtn.closest(".workflow-item-notes");
+    const itemId = list.dataset.itemId;
+    deleteWorkflowItemNote(agencyWorkflowStore, activeAgencyId, itemId, Number(entryEl.dataset.noteIndex));
+    saveAgencyWorkflowStore();
+    list.innerHTML = workflowItemNotes(agencyWorkflowStore[activeAgencyId] || {}, itemId).map(workflowNoteEntryHtml).join("");
+  });
+
+  document.getElementById("agency-panel-body").addEventListener("change", e => {
+    const cb = e.target.closest(".workflow-item-checkbox");
+    if (!cb || activeAgencyId === null) return;
+    if (!agencyWorkflowStore[activeAgencyId]) agencyWorkflowStore[activeAgencyId] = {};
+    if (cb.checked) agencyWorkflowStore[activeAgencyId][cb.dataset.itemId] = true;
+    else delete agencyWorkflowStore[activeAgencyId][cb.dataset.itemId];
+    saveAgencyWorkflowStore();
+    handleWorkflowCheckboxChange(cb, AGENCY_WORKFLOW_PHASES, agencyWorkflowStore[activeAgencyId], document.getElementById("agency-tab-workflow"));
+    const tabBtn = document.querySelector('.agency-tab-btn[data-tab="workflow"]');
+    if (tabBtn) {
+      const { done, total } = workflowStats(AGENCY_WORKFLOW_PHASES, agencyWorkflowStore[activeAgencyId]);
+      const pct = total ? Math.round(done / total * 100) : 0;
+      tabBtn.textContent = `Checklist (${pct}%)`;
+    }
+  });
+
   wireFormsEvents();
   wireAgencyFormsEvents();
 
@@ -3219,36 +3381,48 @@ function wireEvents() {
     btn.addEventListener("click", () => switchTab(btn.dataset.tab));
   });
 
-  document.getElementById("panel-add-note").addEventListener("click", () => {
-    if (activeStudentId === null) return;
-    const ta = document.getElementById("panel-new-note");
-    addStudentNote(activeStudentId, ta.value);
-    ta.value = "";
-    const status = document.getElementById("panel-save-status");
-    status.textContent = "Saved ✓";
-    setTimeout(() => { if (document.getElementById("panel-save-status")) status.textContent = ""; }, 2000);
+  document.getElementById("panel-body").addEventListener("keydown", e => {
+    const input = e.target.closest(".workflow-item-note-input");
+    if (!input || e.key !== "Enter" || activeStudentId === null) return;
+    e.preventDefault();
+    const text = input.value.trim();
+    if (!text) return;
+    const { entry, index } = addWorkflowItemNote(studentWorkflowStore, activeStudentId, input.dataset.itemId, text);
+    saveStudentWorkflowStore();
+    const list = input.closest(".workflow-item-note-wrap").querySelector(".workflow-item-notes");
+    list.insertAdjacentHTML("beforeend", workflowNoteEntryHtml(entry, index));
+    input.value = "";
   });
 
-  document.getElementById("panel-notes-thread").addEventListener("click", e => {
-    const pinBtn = e.target.closest(".pin-toggle-btn");
-    if (pinBtn) {
-      togglePinNote(activeStudentId, Number(pinBtn.dataset.noteId));
-      return;
-    }
-    const toggleBtn = e.target.closest(".reply-toggle-btn");
-    if (toggleBtn) {
-      const form = document.querySelector(`.reply-form[data-note-id="${toggleBtn.dataset.noteId}"]`);
-      form.classList.toggle("hidden");
-      if (!form.classList.contains("hidden")) form.querySelector("textarea").focus();
-      return;
-    }
-    const submitBtn = e.target.closest(".reply-submit-btn");
-    if (submitBtn) {
-      const noteId = Number(submitBtn.dataset.noteId);
-      const textarea = submitBtn.closest(".reply-form").querySelector("textarea");
-      addNoteReply(activeStudentId, noteId, textarea.value);
+  document.getElementById("panel-body").addEventListener("click", async e => {
+    const delBtn = e.target.closest(".workflow-item-note-delete");
+    if (!delBtn || activeStudentId === null) return;
+    const ok = await confirmDialog("Are you sure you want to delete this note?", { title: "Delete note", confirmLabel: "Delete", danger: true });
+    if (!ok) return;
+    const entryEl = delBtn.closest(".workflow-item-note-entry");
+    const list = delBtn.closest(".workflow-item-notes");
+    const itemId = list.dataset.itemId;
+    deleteWorkflowItemNote(studentWorkflowStore, activeStudentId, itemId, Number(entryEl.dataset.noteIndex));
+    saveStudentWorkflowStore();
+    list.innerHTML = workflowItemNotes(studentWorkflowStore[activeStudentId] || {}, itemId).map(workflowNoteEntryHtml).join("");
+  });
+
+  document.getElementById("panel-body").addEventListener("change", e => {
+    const cb = e.target.closest(".workflow-item-checkbox");
+    if (!cb || activeStudentId === null) return;
+    if (!studentWorkflowStore[activeStudentId]) studentWorkflowStore[activeStudentId] = {};
+    if (cb.checked) studentWorkflowStore[activeStudentId][cb.dataset.itemId] = true;
+    else delete studentWorkflowStore[activeStudentId][cb.dataset.itemId];
+    saveStudentWorkflowStore();
+    handleWorkflowCheckboxChange(cb, STUDENT_WORKFLOW_PHASES, studentWorkflowStore[activeStudentId], document.getElementById("panel-workflow-section"));
+    const tabBtn = document.querySelector('.student-panel-tab-btn[data-tab="workflow"]');
+    if (tabBtn) {
+      const { done, total } = workflowStats(STUDENT_WORKFLOW_PHASES, studentWorkflowStore[activeStudentId]);
+      const pct = total ? Math.round(done / total * 100) : 0;
+      tabBtn.textContent = `Checklist (${pct}%)`;
     }
   });
+
 
   document.getElementById("modal-close").addEventListener("click", closeNotesModal);
   document.getElementById("modal-cancel").addEventListener("click", closeNotesModal);
@@ -3273,6 +3447,22 @@ function wireEvents() {
     const notifDd   = document.getElementById("notif-dropdown");
     if (notifWrap && !notifWrap.contains(e.target)) notifDd.classList.add("hidden");
   });
+}
+
+// ── Sidebar Collapse ──────────────────────────────────────────────────────────
+const SIDEBAR_COLLAPSED_KEY = "fepms-sidebar-collapsed";
+
+function applySidebarCollapsed(collapsed) {
+  document.body.classList.toggle("sidebar-collapsed", collapsed);
+  localStorage.setItem(SIDEBAR_COLLAPSED_KEY, collapsed ? "1" : "0");
+}
+
+function toggleSidebar() {
+  applySidebarCollapsed(!document.body.classList.contains("sidebar-collapsed"));
+}
+
+function initSidebar() {
+  applySidebarCollapsed(localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "1");
 }
 
 // ── Theme Management ──────────────────────────────────────────────────────────
@@ -3326,16 +3516,9 @@ function closeSettings() {
   document.getElementById("settings-modal").classList.add("hidden");
 }
 
-function handleExit() {
-  if (confirm("Sign out of the Field Education Program?")) {
-    document.body.innerHTML = `
-      <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:system-ui,sans-serif;background:#f8fafc;">
-        <div style="text-align:center;color:#64748b;padding:2rem">
-          <p style="font-size:1.5rem;font-weight:700;color:#1e293b;margin-bottom:0.5rem">Signed Out</p>
-          <p>You have been signed out of the Field Education Program.</p>
-        </div>
-      </div>`;
-  }
+async function handleExit() {
+  const ok = await confirmDialog("Sign out of the Field Education Program?", { title: "Sign out", confirmLabel: "Sign Out" });
+  if (ok) logout();
 }
 
 // ── Notifications ─────────────────────────────────────────────────────────────
@@ -3343,10 +3526,6 @@ function buildNotifications() {
   const needsPlacement = roster.filter(s => s.status === "Pending");
   const newlyAdded     = roster.filter(s => s.cohort === "Fall 2025");
   const contractAlerts = agencies.filter(a => a.contract === "Pending" || a.contract === "Expired");
-  // Most recent task activity first — every add/edit/delete/restore on a
-  // checklist task logs an entry (see logTaskActivity), so this is a running
-  // feed of task progress rather than a snapshot of current state.
-  const taskUpdates = taskActivity.slice(0, 5);
 
   function notifSection(title, dotCls, items, itemHtml) {
     if (!items.length) return "";
@@ -3375,16 +3554,14 @@ function buildNotifications() {
     notifSection("Newly Added", "bg-sky-400", newlyAdded,
       s => notifRow(s.name, `Added · ${s.cohort}`, "bg-sky-400")) +
     notifSection("Contract Updates", "bg-red-400", contractAlerts,
-      a => notifRow(a.name, `Contract ${a.contract}`, a.contract === "Expired" ? "bg-red-400" : "bg-amber-400")) +
-    notifSection("Task Updates", "bg-violet-400", taskUpdates,
-      t => notifRow(t.item, `${t.message} · ${t.by} · ${t.date}`, "bg-violet-400"));
+      a => notifRow(a.name, `Contract ${a.contract}`, a.contract === "Expired" ? "bg-red-400" : "bg-amber-400"));
 
   const panel = document.getElementById("notif-dropdown");
   panel.innerHTML = `
     <div class="px-4 py-2.5 border-b border-slate-100 flex items-center justify-between">
       <p class="font-semibold text-sm text-slate-800">Notifications</p>
       <span class="text-xs text-white bg-[#F05A22] rounded-full px-2 py-0.5 font-semibold">
-        ${needsPlacement.length + newlyAdded.length + contractAlerts.length + taskUpdates.length}
+        ${needsPlacement.length + newlyAdded.length + contractAlerts.length}
       </span>
     </div>
     <div class="max-h-[420px] overflow-y-auto divide-y divide-slate-50">
@@ -3430,6 +3607,8 @@ function updateStudent(id, changes) {
 function deleteStudent(id) {
   roster = roster.filter(s => s.id !== id);
   persistRoster();
+  delete studentWorkflowStore[id];
+  saveStudentWorkflowStore();
 }
 
 function addAgency(data) {
@@ -3450,6 +3629,8 @@ function updateAgency(id, changes) {
 function deleteAgency(id) {
   agencies = agencies.filter(a => a.id !== id);
   persistAgencies();
+  delete agencyWorkflowStore[id];
+  saveAgencyWorkflowStore();
 }
 
 function addTemplate(data) {
@@ -3495,18 +3676,19 @@ if (staffTitleEl) staffTitleEl.textContent = staffProfile.title;
 document.getElementById("page-heading").textContent = TAB_META.home.heading;
 
 wireEvents();
+initSidebar();
 initTheme();
 initTextSize();
 loadSavedNotes();
 renderStats();
 renderPlacementBreakdown();
-renderChecklist();
 seedFieldApplicationsIfEmpty();
 renderFormsList();
 seedAgencyInterviewsIfEmpty();
 renderAgencyFormsList();
 renderTableHeader();
 renderCohortFilterOptions();
+renderLiaisonFilterOptions();
 renderRoster();
 renderAgencies();
 renderTemplates();

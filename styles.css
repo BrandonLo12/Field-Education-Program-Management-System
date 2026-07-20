@@ -41,6 +41,25 @@
   margin-top: 0.125rem;
 }
 
+/* Collapsed sidebar — toggled by the hamburger button in the header, see
+   toggleSidebar() in app.js. Shrinks the nav down to icons-only. */
+body.sidebar-collapsed #header-left,
+body.sidebar-collapsed aside {
+  width: 7rem !important;
+}
+body.sidebar-collapsed #header-left {
+  padding-left: 2rem !important;
+}
+body.sidebar-collapsed .std-label {
+  display: none !important;
+}
+body.sidebar-collapsed .std-tab {
+  justify-content: center;
+  gap: 0 !important;
+  padding-left: 0.5rem !important;
+  padding-right: 0.5rem !important;
+}
+
 /* Smooth entrance animation for cards */
 @keyframes fadeSlideUp {
   from { opacity: 0; transform: translateY(12px); }

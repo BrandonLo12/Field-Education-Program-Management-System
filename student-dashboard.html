@@ -4,19 +4,21 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Student Dashboard — Field Education Program</title>
+  <script src="auth.js"></script>
+  <script>requireAuth("student");</script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
       theme: {
         extend: {
-          fontFamily: { sans: ["Inter", "system-ui", "sans-serif"] }
+          fontFamily: { sans: ["Hanken Grotesk", "system-ui", "sans-serif"] }
         }
       }
     }
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body class="bg-slate-50 min-h-screen font-sans antialiased">
@@ -24,7 +26,12 @@
   <!-- Top Navigation Bar -->
   <header class="sticky top-0 z-50 h-16 flex">
     <!-- Left: orange (UOP brand), aligned with sidebar -->
-    <div id="header-left" class="w-72 flex-shrink-0 bg-[#F05A22] flex items-center px-6">
+    <div id="header-left" class="w-72 flex-shrink-0 bg-[#F05A22] flex items-center pl-[2.375rem] pr-4">
+      <button id="sidebar-toggle" class="w-12 h-12 flex items-center justify-center rounded-lg hover:bg-white/10 transition-colors flex-shrink-0" title="Toggle sidebar" aria-label="Toggle sidebar">
+        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
     </div>
     <!-- Right: light, aligned with main content -->
     <div id="header-right" class="flex-1 bg-slate-50 flex items-center justify-end gap-2 px-6">
@@ -116,9 +123,6 @@
     <!-- ── Left Sidebar ──────────────────────────────────────────────────── -->
     <aside class="w-72 bg-transparent border-r border-slate-200 flex-shrink-0 sticky top-16 h-[calc(100vh-4rem)] flex flex-col overflow-y-auto">
       <div class="p-5 flex-1">
-
-        <p class="text-[10px] font-bold text-slate-900 uppercase tracking-widest mb-4 px-2">Navigation</p>
-
         <nav class="space-y-2">
 
           <!-- Home tab -->
@@ -130,6 +134,17 @@
               </svg>
             </div>
             <p class="std-label">Home</p>
+          </button>
+
+          <!-- Checklist tab -->
+          <button class="std-tab w-full" data-tab="checklist">
+            <div class="std-icon-wrap std-icon-inactive">
+              <svg class="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+              </svg>
+            </div>
+            <p class="std-label">Checklist</p>
           </button>
 
         </nav>
@@ -206,6 +221,15 @@
           <div class="p-6" id="home-calendar-section"></div>
         </div>
 
+      </div>
+
+      <!-- ── Checklist Tab ─────────────────────────────────────────────── -->
+      <!-- Read-only: same workflow the coordinator/admin dashboards track,
+           just no way here to check items off or add/delete notes. -->
+      <div id="tab-checklist" class="hidden space-y-6">
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+          <div id="checklist-section"></div>
+        </div>
       </div>
 
       <!-- ── Profile Tab ───────────────────────────────────────────────── -->
@@ -309,6 +333,46 @@
     </div>
   </div>
 
+  <!-- Confirm Modal — replaces window.confirm() so confirmation prompts
+       match the app's look instead of the browser's native "localhost says"
+       dialog. -->
+  <div id="confirm-modal" class="fixed inset-0 z-[95] hidden">
+    <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onclick="resolveConfirmDialog(false)"></div>
+    <div class="absolute inset-0 flex items-center justify-center p-4 pointer-events-none">
+      <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm pointer-events-auto" role="alertdialog" aria-modal="true">
+        <div class="px-6 pt-6 pb-2">
+          <h3 id="confirm-modal-title" class="text-lg font-bold text-slate-800">Are you sure?</h3>
+        </div>
+        <div class="px-6 pb-5">
+          <p id="confirm-modal-message" class="text-sm text-slate-500"></p>
+        </div>
+        <div class="px-6 pb-6 flex items-center justify-end gap-2">
+          <button type="button" onclick="resolveConfirmDialog(false)" class="px-4 py-2 text-sm font-medium text-slate-500 hover:bg-slate-50 rounded-lg">Cancel</button>
+          <button type="button" id="confirm-modal-confirm-btn" onclick="resolveConfirmDialog(true)" class="px-4 py-2 text-sm font-medium text-white rounded-lg shadow-sm">Confirm</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Alert Modal — replaces window.alert() for the same reason. -->
+  <div id="alert-modal" class="fixed inset-0 z-[95] hidden">
+    <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onclick="resolveAlertDialog()"></div>
+    <div class="absolute inset-0 flex items-center justify-center p-4 pointer-events-none">
+      <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm pointer-events-auto" role="alertdialog" aria-modal="true">
+        <div class="px-6 pt-6 pb-2">
+          <h3 id="alert-modal-title" class="text-lg font-bold text-slate-800">Heads up</h3>
+        </div>
+        <div class="px-6 pb-5">
+          <p id="alert-modal-message" class="text-sm text-slate-500"></p>
+        </div>
+        <div class="px-6 pb-6 flex items-center justify-end">
+          <button type="button" id="alert-modal-ok-btn" onclick="resolveAlertDialog()" class="px-4 py-2 text-sm font-medium text-white rounded-lg shadow-sm">OK</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="workflow-data.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

@@ -4,19 +4,21 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Coordinator Dashboard — Field Education Program</title>
+  <script src="auth.js"></script>
+  <script>requireAuth("staff");</script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
       theme: {
         extend: {
-          fontFamily: { sans: ["Inter", "system-ui", "sans-serif"] }
+          fontFamily: { sans: ["Hanken Grotesk", "system-ui", "sans-serif"] }
         }
       }
     }
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="staff-styles.css" />
 </head>
 <body class="bg-slate-50 min-h-screen font-sans antialiased">
@@ -24,8 +26,13 @@
   <!-- Top Navigation Bar -->
   <header class="sticky top-0 z-40 h-16 flex">
     <!-- Left: orange (UOP brand), aligned with sidebar -->
-    <div id="header-left" class="w-72 flex-shrink-0 bg-[#F05A22] flex items-center px-6">
-      <button id="header-reset" class="flex items-center hover:opacity-70 transition-opacity" title="Reset filters">
+    <div id="header-left" class="w-72 flex-shrink-0 bg-[#F05A22] flex items-center gap-1 pl-[2.375rem] pr-4">
+      <button id="sidebar-toggle" class="w-12 h-12 flex items-center justify-center rounded-lg hover:bg-white/10 transition-colors flex-shrink-0" title="Toggle sidebar" aria-label="Toggle sidebar">
+        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+      <button id="header-reset" class="flex-1 h-full flex items-center hover:opacity-70 transition-opacity" title="Reset filters">
       </button>
     </div>
     <!-- Right: light, aligned with main content -->
@@ -112,9 +119,6 @@
     <!-- ── Left Sidebar ──────────────────────────────────────────────────── -->
     <aside class="w-72 bg-transparent border-r border-slate-200 flex-shrink-0 sticky top-16 h-[calc(100vh-4rem)] flex flex-col overflow-y-auto">
       <div class="p-5 flex-1">
-
-        <p class="text-[10px] font-bold text-slate-900 uppercase tracking-widest mb-4 px-2">Navigation</p>
-
         <nav class="space-y-2">
           <!-- Home tab -->
           <button class="sidebar-tab sidebar-active w-full" data-tab="home">
@@ -136,17 +140,6 @@
               </svg>
             </div>
             <p class="sidebar-label">Students</p>
-          </button>
-
-          <!-- Checklist tab -->
-          <button class="sidebar-tab w-full" data-tab="checklist">
-            <div class="sidebar-icon-wrap bg-slate-200">
-              <svg class="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
-              </svg>
-            </div>
-            <p class="sidebar-label">Checklist</p>
           </button>
 
           <!-- Agencies tab -->
@@ -210,10 +203,19 @@
         <p class="text-xs font-bold text-slate-900 uppercase tracking-widest px-1">Placement Status Overview</p>
         <div id="stat-cards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"></div>
 
-        <!-- Placement Breakdown -->
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
-          <p class="text-xs font-bold text-slate-900 uppercase tracking-widest mb-4">Placement Breakdown</p>
-          <div id="placement-breakdown"></div>
+        <!-- Placement Breakdown + Agency Contract Status -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+            <div class="flex items-center justify-between gap-3 mb-4">
+              <p class="text-xs font-bold text-slate-900 uppercase tracking-widest">Placement Breakdown</p>
+              <select id="placement-breakdown-cohort" class="filter-select"></select>
+            </div>
+            <div id="placement-breakdown"></div>
+          </div>
+          <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+            <p class="text-xs font-bold text-slate-900 uppercase tracking-widest mb-4">Agency Contract Status</p>
+            <div id="agency-contract-status"></div>
+          </div>
         </div>
       </div>
 
@@ -240,9 +242,6 @@
             </select>
             <select id="filter-liaison" class="filter-select">
               <option value="">All Liaisons</option>
-              <option value="Annette">Annette</option>
-              <option value="Halide">Halide</option>
-              <option value="Vanessa">Vanessa</option>
             </select>
             <select id="filter-status" class="filter-select">
               <option value="">All Statuses</option>
@@ -275,47 +274,6 @@
         </div>
 
         <p class="text-xs text-slate-400 text-center" id="result-count"></p>
-      </div>
-
-      <!-- ── Checklist Tab ─────────────────────────────────────────────── -->
-      <div id="tab-checklist" class="hidden space-y-6">
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 sm:p-5 space-y-4">
-          <div class="flex items-center justify-between gap-4 flex-wrap">
-            <p class="text-xs font-bold text-slate-900 uppercase tracking-widest">Checklist</p>
-            <div class="flex items-center gap-2">
-              <button id="checklist-trash-btn" class="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">
-                <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                </svg>
-                Trash
-              </button>
-              <button id="checklist-add-btn" class="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-white bg-teal-600 hover:bg-teal-700 rounded-lg shadow-sm transition-colors">
-                <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                </svg>
-                Add Item
-              </button>
-            </div>
-          </div>
-          <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-              <thead>
-                <tr class="border-b border-slate-100">
-                  <th class="checklist-th">Item</th>
-                  <th class="checklist-th">Description</th>
-                  <th class="checklist-th">Task Assigned To</th>
-                  <th class="checklist-th">Assigned From</th>
-                  <th class="checklist-th">Deadline</th>
-                  <th class="checklist-th">Remarks</th>
-                  <th class="checklist-th text-center">Status</th>
-                  <th class="checklist-th"></th>
-                </tr>
-              </thead>
-              <tbody id="checklist-body"></tbody>
-            </table>
-          </div>
-          <p id="checklist-empty" class="hidden text-center text-slate-400 text-sm py-10">No checklist items yet. Click "Add Item" to create one.</p>
-        </div>
       </div>
 
       <!-- ── Agencies Tab ──────────────────────────────────────────────── -->
@@ -456,7 +414,7 @@
 
   <!-- Student Profile Panel -->
   <div id="panel-backdrop" class="fixed inset-0 z-40 bg-slate-900/30 hidden" onclick="closeStudentPanel()"></div>
-  <div id="student-panel" class="fixed top-16 right-0 bottom-0 w-full sm:w-3/4 z-50 bg-white shadow-2xl border-l border-slate-100 flex flex-col hidden" style="transition: transform 0.3s ease;" >
+  <div id="student-panel" class="fixed top-16 right-0 bottom-0 w-full sm:w-[80%] z-50 bg-white shadow-2xl border-l border-slate-100 flex flex-col hidden" style="transition: transform 0.3s ease;" >
 
     <!-- Panel Header -->
     <div class="px-6 pt-6 pb-4 border-b border-slate-100 flex items-center justify-between flex-shrink-0">
@@ -468,36 +426,14 @@
       </button>
     </div>
 
-    <!-- Two-column body: student info (left) + running notes log (right) -->
-    <div class="flex-1 min-h-0 flex flex-col sm:flex-row">
-
-      <!-- Left: student info (filled by JS) -->
-      <div id="panel-body" class="w-full sm:w-1/2 overflow-y-auto px-6 py-5 space-y-6 border-b sm:border-b-0 sm:border-r border-slate-100"></div>
-
-      <!-- Right: staff notes, styled as a running document -->
-      <div class="w-full sm:w-1/2 flex flex-col min-h-0 bg-slate-50/40">
-        <div class="px-6 pt-5 pb-3 flex items-center justify-between flex-shrink-0 border-b border-slate-100">
-          <label class="text-xs font-bold text-slate-900 uppercase tracking-widest">Staff Notes</label>
-        </div>
-        <div id="panel-notes-thread" class="flex-1 min-h-0 overflow-y-auto px-6 py-5"></div>
-        <div class="px-6 py-4 border-t border-slate-100 space-y-2 flex-shrink-0 bg-white">
-          <textarea id="panel-new-note" rows="2"
-            class="w-full text-sm border border-slate-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent resize-none bg-white"
-            placeholder="Add a note about this student…"></textarea>
-          <div class="flex items-center justify-between">
-            <p class="text-xs text-slate-400" id="panel-save-status"></p>
-            <button id="panel-add-note" class="px-4 py-2 text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 rounded-lg shadow-sm transition-colors">
-              Add Note
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <!-- Body: single scrolling column — Information/Checklist/Staff Notes
+         tab content is all filled in by JS (openStudentPanel). -->
+    <div id="panel-body" class="flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-6"></div>
   </div>
 
   <!-- Agency Profile Panel -->
   <div id="agency-panel-backdrop" class="fixed inset-0 z-40 bg-slate-900/30 hidden" onclick="closeAgencyPanel()"></div>
-  <div id="agency-panel" class="fixed top-16 right-0 bottom-0 w-full sm:w-[480px] z-50 bg-white shadow-2xl border-l border-slate-100 flex flex-col hidden" style="transition: transform 0.3s ease;" >
+  <div id="agency-panel" class="fixed top-16 right-0 bottom-0 w-full sm:w-[80%] z-50 bg-white shadow-2xl border-l border-slate-100 flex flex-col hidden" style="transition: transform 0.3s ease;" >
 
     <!-- Panel Header -->
     <div class="px-6 pt-6 pb-4 border-b border-slate-100 flex items-center justify-between flex-shrink-0">
@@ -669,115 +605,46 @@
     </div>
   </div>
 
-  <!-- Checklist Trash Modal -->
-  <div id="checklist-trash-modal" class="fixed inset-0 z-[70] hidden">
-    <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onclick="closeChecklistTrash()"></div>
+  <!-- Confirm Modal — replaces window.confirm() so confirmation prompts
+       match the app's look instead of the browser's native "localhost says"
+       dialog. -->
+  <div id="confirm-modal" class="fixed inset-0 z-[95] hidden">
+    <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onclick="resolveConfirmDialog(false)"></div>
     <div class="absolute inset-0 flex items-center justify-center p-4 pointer-events-none">
-      <div class="bg-white rounded-2xl shadow-xl w-full max-w-[95vw] xl:max-w-7xl max-h-[90vh] flex flex-col pointer-events-auto" role="dialog" aria-modal="true">
-        <div class="px-6 pt-6 pb-4 border-b border-slate-100 flex items-center justify-between flex-shrink-0">
-          <h3 class="text-xl font-bold text-slate-800">Trashed Checklist Items</h3>
-          <button onclick="closeChecklistTrash()" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-            </svg>
-          </button>
+      <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm pointer-events-auto" role="alertdialog" aria-modal="true">
+        <div class="px-6 pt-6 pb-2">
+          <h3 id="confirm-modal-title" class="text-lg font-bold text-slate-800">Are you sure?</h3>
         </div>
-        <div class="px-6 py-4 overflow-y-auto flex-1">
-          <div class="overflow-x-auto">
-            <table class="w-full text-base">
-              <thead>
-                <tr class="border-b border-slate-100">
-                  <th class="checklist-th">Item</th>
-                  <th class="checklist-th">Description</th>
-                  <th class="checklist-th">Task Assigned To</th>
-                  <th class="checklist-th">Assigned From</th>
-                  <th class="checklist-th">Deadline</th>
-                  <th class="checklist-th">Remarks</th>
-                  <th class="checklist-th text-center">Status</th>
-                  <th class="checklist-th">Deleted</th>
-                  <th class="checklist-th"></th>
-                </tr>
-              </thead>
-              <tbody id="checklist-trash-body"></tbody>
-            </table>
-          </div>
-          <p id="checklist-trash-empty" class="hidden text-center text-slate-400 text-base py-10">No trashed items yet.</p>
+        <div class="px-6 pb-5">
+          <p id="confirm-modal-message" class="text-sm text-slate-500"></p>
+        </div>
+        <div class="px-6 pb-6 flex items-center justify-end gap-2">
+          <button type="button" onclick="resolveConfirmDialog(false)" class="px-4 py-2 text-sm font-medium text-slate-500 hover:bg-slate-50 rounded-lg">Cancel</button>
+          <button type="button" id="confirm-modal-confirm-btn" onclick="resolveConfirmDialog(true)" class="px-4 py-2 text-sm font-medium text-white rounded-lg shadow-sm">Confirm</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- New Checklist Task Modal -->
-  <div id="checklist-task-modal" class="fixed inset-0 z-[70] hidden">
-    <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onclick="closeChecklistTaskModal()"></div>
+  <!-- Alert Modal — replaces window.alert() for the same reason. -->
+  <div id="alert-modal" class="fixed inset-0 z-[95] hidden">
+    <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onclick="resolveAlertDialog()"></div>
     <div class="absolute inset-0 flex items-center justify-center p-4 pointer-events-none">
-      <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg pointer-events-auto" role="dialog" aria-modal="true">
-        <div class="px-6 pt-6 pb-4 border-b border-slate-100 flex items-center justify-between">
-          <h3 class="text-xl font-bold text-slate-800">New Task</h3>
-          <button type="button" onclick="closeChecklistTaskModal()" class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-            </svg>
-          </button>
+      <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm pointer-events-auto" role="alertdialog" aria-modal="true">
+        <div class="px-6 pt-6 pb-2">
+          <h3 id="alert-modal-title" class="text-lg font-bold text-slate-800">Heads up</h3>
         </div>
-        <form id="checklist-task-form">
-          <div class="px-6 py-5 space-y-4">
-            <div>
-              <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Item</label>
-              <input type="text" id="ct-item" required placeholder="Task name"
-                class="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent" />
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Description</label>
-              <select id="ct-description" class="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-400 cursor-pointer">
-                <option value="">—</option>
-                <option value="Placement Status">Placement Status</option>
-                <option value="Agency Contract">Agency Contract</option>
-                <option value="Enrollment Change">Enrollment Change</option>
-                <option value="Concentration Change">Concentration Change</option>
-                <option value="Other">Other</option>
-              </select>
-              <input type="text" id="ct-description-other" placeholder="Describe…"
-                class="hidden mt-2 w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-400" />
-            </div>
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Task Assigned To</label>
-                <select id="ct-assigned" class="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-400 cursor-pointer"></select>
-              </div>
-              <div>
-                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Assigned From</label>
-                <select id="ct-assigned-from" class="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-400 cursor-pointer"></select>
-              </div>
-            </div>
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Deadline</label>
-                <input type="date" id="ct-deadline"
-                  class="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-400 cursor-pointer" />
-              </div>
-              <div>
-                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Remarks</label>
-                <select id="ct-remarks" class="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-400 cursor-pointer"></select>
-              </div>
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Status</label>
-              <label class="flex items-center gap-2 h-[38px] cursor-pointer">
-                <input type="checkbox" id="ct-done" class="w-4 h-4 rounded accent-teal-600 cursor-pointer" />
-                <span class="text-sm text-slate-700">Mark as complete</span>
-              </label>
-            </div>
-          </div>
-          <div class="px-6 pb-6 pt-4 border-t border-slate-100 flex items-center justify-end gap-2">
-            <button type="button" onclick="closeChecklistTaskModal()" class="px-4 py-2 text-sm font-medium text-slate-500 hover:bg-slate-50 rounded-lg">Cancel</button>
-            <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 rounded-lg shadow-sm transition-colors">Add Task</button>
-          </div>
-        </form>
+        <div class="px-6 pb-5">
+          <p id="alert-modal-message" class="text-sm text-slate-500"></p>
+        </div>
+        <div class="px-6 pb-6 flex items-center justify-end">
+          <button type="button" id="alert-modal-ok-btn" onclick="resolveAlertDialog()" class="px-4 py-2 text-sm font-medium text-white rounded-lg shadow-sm">OK</button>
+        </div>
       </div>
     </div>
   </div>
 
+  <script src="workflow-data.js"></script>
   <script src="staff-app.js"></script>
 </body>
 </html>
